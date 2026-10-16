@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "idea-to-issues",
+  "description": "The idea-to-issues Claude Code plugin, installable straight from its own repository.",
+  "owner": {
+    "name": "Solonious",
+    "url": "https://github.com/Solonious"
+  },
+  "plugins": [
+    {
+      "name": "idea-to-issues",
+      "source": "./",
+      "description": "Turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets."
+    }
+  ]
+}
