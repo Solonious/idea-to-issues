@@ -60,11 +60,15 @@ One zero-dependency Node tool with four modes:
 | Mode | Purpose |
 |---|---|
 | `check` | validates the spec blocks before gate 3 |
-| `file --dry-run \| --apply [--limit N]` | creates Issues, parent and blocked-by links, labels and Project items in dependency order |
+| `file --dry-run \| --apply [--limit N] [--project <title>]` | creates Issues, parent and blocked-by links, labels and Project items in dependency order |
 | `verify` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
 
 Run `node bin/i2i.mjs --help` for the usage.
+
+### Filing
+
+`file` refuses unless gate 3 passes (`gate require file`) and `check` passes, then files `docs/specs`, the directory gate 3 approved. On every run it rebuilds the key to number map from GitHub issue titles (`[KEY]` epics, `[KEY-N]` tickets, open and closed) and writes no map. `--dry-run` prints every write and makes none; `--apply` performs them in order, and `--limit N` stops after N writes. A re-run skips the keys GitHub already holds and only adds missing links. `--project <title>` names the Project; only epic parents are added to it, because GitHub adds their sub-issues itself.
 
 ## Install
 

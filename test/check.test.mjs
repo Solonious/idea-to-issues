@@ -134,10 +134,8 @@ test('check usage errors exit 2 and --render prints no table on findings', (t) =
   assert.equal(stdout, '');
 });
 
-test('the other modes are still not implemented', () => {
-  for (const mode of ['file', 'verify']) {
-    const { status, stderr } = i2i(mode);
-    assert.equal(status, 1, mode);
-    assert.match(stderr, /not implemented yet \(#\d+\)/);
-  }
+test('verify is still not implemented', () => {
+  const { status, stderr } = i2i('verify');
+  assert.equal(status, 1);
+  assert.match(stderr, /not implemented yet \(#\d+\)/);
 });

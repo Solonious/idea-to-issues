@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 // i2i: the deterministic spine of idea-to-issues. Zero dependencies, Node 20+.
+import { join } from 'node:path';
 import { parseSpecs, checkSpecs, renderTable, formatFinding } from './lib/spec.mjs';
 import { STAGES, repoRoot, resolveGate, requireStage, stamp } from './lib/gate.mjs';
+import { planFile, describe, perform } from './lib/file.mjs';
 
 const MODES = {
   check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3', issue: 5 },
-  file: { usage: 'file --dry-run | --apply [--limit N]', summary: 'file Issues, links, labels and Project items in dependency order', issue: 7 },
+  file: { usage: 'file --dry-run | --apply [--limit N] [--project <title>]', summary: 'file Issues, links, labels and Project items in dependency order', issue: 7 },
   verify: { usage: 'verify', summary: 'compare the approved spec blocks with what GitHub holds', issue: 8 },
   gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter', issue: 6 },
 };
 
+const COL = Math.max(...Object.values(MODES).map((m) => m.usage.length)) + 2;
 const HELP = `Usage: i2i <mode> [options]
 
 Modes:
-${Object.values(MODES).map((m) => `  ${m.usage.padEnd(38)}${m.summary}`).join('\n')}
+${Object.values(MODES).map((m) => `  ${m.usage.padEnd(COL)}${m.summary}`).join('\n')}
 
 Options:
-  -h, --help                            show this help
+  ${'-h, --help'.padEnd(COL)}show this help
 `;
 
 function runCheck(args) {
@@ -93,6 +96,92 @@ function runGate(args) {
   return 0;
 }
 
+function runFile(args) {
+  const usage = () => {
+    process.stderr.write('Usage: i2i file --dry-run | --apply [--limit N] [--project <title>]\n');
+    return 2;
+  };
+  let apply, limit, project;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--dry-run' || a === '--apply') {
+      if (apply !== undefined) return usage();
+      apply = a === '--apply';
+    } else if (a === '--limit' || a === '--project') {
+      const v = args[++i];
+      if (!v || v.startsWith('--') || (a === '--limit' ? limit : project) !== undefined || (a === '--limit' && !/^[1-9]\d*$/.test(v))) return usage();
+      if (a === '--limit') limit = Number(v);
+      else project = v;
+    } else return usage();
+  }
+  if (apply === undefined || (limit !== undefined && !apply)) return usage();
+  const err = (s) => process.stderr.write(`i2i file: ${s}\n`);
+  const bare = (s) => process.stderr.write(`${s}\n`);
+  const out = (s) => process.stdout.write(`${s}\n`);
+  const cwd = process.cwd();
+  const root = repoRoot(cwd);
+  if (root === undefined) {
+    err(`${cwd} is not inside a git repository`);
+    return 2;
+  }
+  const gate = requireStage(root, 'file');
+  for (const note of gate.notes) err(`note: ${note}`);
+  if (gate.problems.length > 0) {
+    gate.problems.forEach(err);
+    bare(`file: may not run (${gate.problems.length} problem(s))`);
+    return 1;
+  }
+  let spec, plan;
+  try {
+    spec = parseSpecs(join(root, STAGES.specs.doc));
+    if (spec.files.length === 0) throw new Error(`no epic files in ${STAGES.specs.doc}`);
+  } catch (e) {
+    err(e.message);
+    return 1;
+  }
+  const { findings, order } = checkSpecs(spec);
+  if (findings.length > 0) {
+    findings.forEach((f) => bare(formatFinding(f)));
+    bare(`file: check found ${findings.length} finding(s)`);
+    return 1;
+  }
+  try {
+    plan = planFile(root, spec, order, project);
+  } catch (e) {
+    err(e.message);
+    return 1;
+  }
+  const { writes, existing, numbers } = plan;
+  out(`file: ${spec.epics.length} epic(s), ${order.length} ticket(s); ${existing} already on GitHub`);
+  if (!project) err('note: no --project given, so no epic is added to a Project');
+  if (writes.length === 0) {
+    out('file: GitHub already holds every key, nothing to write');
+    return 0;
+  }
+  if (!apply) {
+    writes.forEach((w, i) => out(`  ${i + 1}. ${describe(w, numbers)}`));
+    out(`file: dry run, ${writes.length} write(s) planned, none made`);
+    return 0;
+  }
+  let made = 0;
+  for (const w of writes) {
+    if (made === limit) {
+      out(`file: stopped after ${made} write(s), ${writes.length - made} remaining: run file --apply again`);
+      return 0;
+    }
+    try {
+      const n = perform(root, w, numbers);
+      out(`  ${++made}. ${describe(w, numbers)}${n ? ` → #${n}` : ''}`);
+    } catch (e) {
+      err(`write ${made + 1} failed: ${e.message}`);
+      bare(`file: ${made} write(s) made before the failure: run file --apply again; keys already on GitHub are skipped`);
+      return 1;
+    }
+  }
+  out(`file: ${made} write(s) made`);
+  return 0;
+}
+
 function main(argv) {
   const major = Number(process.versions.node.split('.')[0]);
   if (major < 20) {
@@ -116,6 +205,7 @@ function main(argv) {
 
   if (mode === 'check') return runCheck(argv.slice(1));
   if (mode === 'gate') return runGate(argv.slice(1));
+  if (mode === 'file') return runFile(argv.slice(1));
 
   process.stderr.write(`i2i ${mode}: not implemented yet (#${MODES[mode].issue})\n`);
   return 1;
