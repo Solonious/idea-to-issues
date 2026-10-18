@@ -2,7 +2,7 @@
 
 A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs, but its stages and the `i2i` modes are still being built. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the concept stage are in; the other stages are still being built. Progress is tracked in this repository's issues.
 
 ## What it does
 
@@ -20,6 +20,10 @@ The agent holds the judgement: the concept, the architecture, the specs, and whe
 | tickets | `docs/specs/index.md` (epic order), then the Issues | gate 3 |
 
 Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English.
+
+### Running a stage
+
+Stage 1 is `/idea-to-issues:concept`. Give it your idea and, if you have one, a prototype link. It scans a few close products, interviews you one question at a time, and writes `docs/CONCEPT.md`. It ends by asking you to run `/idea-to-issues:approve concept`.
 
 ## The three gates
 
@@ -98,6 +102,12 @@ Or in two steps:
 /plugin install idea-to-issues@idea-to-issues
 ```
 
+## Settings
+
+| Option | Default | Purpose |
+|---|---|---|
+| `language` | English | The language the stage skills talk to you in. Set when you enable the plugin. Documents stay in English. |
+
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) `gh` 2.94 or later, authenticated with the `project` scope: `gh auth refresh -s project`
@@ -114,6 +124,10 @@ claude plugin validate .
 ```
 
 CI runs both on every push and pull request.
+
+## Credits
+
+The `grilling` skill is adapted from Matt Pocock's `grilling` skill in [mattpocock/skills](https://github.com/mattpocock/skills), MIT License. Its license is `skills/grilling/LICENSE`.
 
 ## License
 

@@ -9,5 +9,13 @@
   "homepage": "https://github.com/Solonious/idea-to-issues",
   "repository": "https://github.com/Solonious/idea-to-issues",
   "license": "MIT",
-  "keywords": ["github-issues", "planning", "specs", "gates"]
+  "keywords": ["github-issues", "planning", "specs", "gates"],
+  "userConfig": {
+    "language": {
+      "type": "string",
+      "title": "Conversation language",
+      "description": "The language the stage skills talk to you in, such as English or Ukrainian. Every document they write stays in English.",
+      "default": "English"
+    }
+  }
 }
