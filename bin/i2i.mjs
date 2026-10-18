@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // i2i: the deterministic spine of idea-to-issues. Zero dependencies, Node 20+.
+import { parseSpecs, checkSpecs, renderTable, formatFinding } from './lib/spec.mjs';
 
 const MODES = {
   check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3', issue: 5 },
@@ -16,6 +17,45 @@ ${Object.values(MODES).map((m) => `  ${m.usage.padEnd(38)}${m.summary}`).join('\
 Options:
   -h, --help                            show this help
 `;
+
+function runCheck(args) {
+  let render = false;
+  let dir;
+  for (const arg of args) {
+    if (arg === '--render') render = true;
+    else if (arg.startsWith('--') || dir !== undefined) {
+      process.stderr.write('Usage: i2i check [--render] <dir>\n');
+      return 2;
+    } else dir = arg;
+  }
+  if (dir === undefined) {
+    process.stderr.write('Usage: i2i check [--render] <dir>\n');
+    return 2;
+  }
+  let spec;
+  try {
+    spec = parseSpecs(dir);
+  } catch (err) {
+    process.stderr.write(`i2i check: ${err.code === 'ENOENT' ? `${dir} does not exist` : err.message}\n`);
+    return 2;
+  }
+  if (spec.files.length === 0) {
+    process.stderr.write(`i2i check: no epic files in ${dir}\n`);
+    return 2;
+  }
+  const { findings, order } = checkSpecs(spec);
+  if (findings.length > 0) {
+    process.stderr.write(findings.map((f) => `${formatFinding(f)}\n`).join('') + `check: ${findings.length} finding(s)\n`);
+    return 1;
+  }
+  if (render) {
+    process.stdout.write(renderTable(order));
+    return 0;
+  }
+  const acs = spec.epics.reduce((sum, e) => sum + e.acs.length, 0);
+  process.stdout.write(`check: ${spec.epics.length} epics, ${order.length} tickets, ${acs} ACs, 0 findings\n`);
+  return 0;
+}
 
 function main(argv) {
   const major = Number(process.versions.node.split('.')[0]);
@@ -37,6 +77,8 @@ function main(argv) {
     process.stderr.write(`i2i: unknown mode "${mode}". Run "i2i --help" for the list of modes.\n`);
     return 2;
   }
+
+  if (mode === 'check') return runCheck(argv.slice(1));
 
   process.stderr.write(`i2i ${mode}: not implemented yet (#${MODES[mode].issue})\n`);
   return 1;
