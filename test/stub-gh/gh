@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+// A stand-in for gh on PATH. State lives in the JSON file named by GH_STUB_STATE; anything it does not know fails loudly.
+// GH_STUB_TRUNCATE=1 fills `issue list` to its limit, GH_STUB_FAIL_AT=k fails the k-th write, GH_STUB_UNLINKED=1 drops parent, blocked-by and project on create.
+const { existsSync, readFileSync, writeFileSync, writeSync } = require('node:fs');
+
+const say = (text) => writeSync(1, `${text}\n`);
+const argv = process.argv.slice(2);
+const file = process.env.GH_STUB_STATE;
+const state = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { next: 1, issues: [], labels: [], writes: [], attempts: 0 };
+const save = () => writeFileSync(file, JSON.stringify(state, null, 2));
+const die = (msg) => (writeSync(2, `${msg}\n`), process.exit(1));
+const flags = (name) => argv.flatMap((a, i) => (a === name ? [argv[i + 1]] : []));
+const flag = (name) => flags(name)[0];
+const nums = (v) => (v ? v.split(',').map(Number) : []);
+const issue = (n) => state.issues.find((i) => i.number === n) ?? die(`stub gh: no issue #${n}`);
+const [cmd, sub] = argv;
+
+if (sub === 'list' && (cmd === 'issue' || cmd === 'label')) {
+  const limit = Number(flag('--limit'));
+  const fields = flag('--json').split(',');
+  if (cmd === 'label') {
+    say(JSON.stringify(state.labels.map((name) => ({ name }))));
+    process.exit(0);
+  }
+  const shape = {
+    number: (i) => i.number,
+    title: (i) => i.title,
+    labels: (i) => i.labels.map((name) => ({ name })),
+    parent: (i) => (i.parent ? { number: i.parent } : null),
+    blockedBy: (i) => ({ nodes: i.blockedBy.map((number) => ({ number, state: 'OPEN' })), totalCount: i.blockedBy.length }),
+    projectItems: (i) => i.projects.map((title) => ({ title })),
+  };
+  const issues = process.env.GH_STUB_TRUNCATE ? Array.from({ length: limit }, (_, k) => ({ number: k + 1, title: `[FILLER-${k + 1}] filler`, labels: [], parent: null, blockedBy: [], projects: [] })) : state.issues;
+  say(JSON.stringify(issues.map((i) => Object.fromEntries(fields.map((f) => [f, shape[f](i)])))));
+  process.exit(0);
+}
+
+const known = (cmd === 'label' && sub === 'create') || (cmd === 'issue' && (sub === 'create' || sub === 'edit'));
+if (!known) die(`stub gh: unsupported: ${argv.join(' ')}`);
+state.attempts++;
+if (String(state.attempts) === process.env.GH_STUB_FAIL_AT) {
+  save();
+  die('stub gh: injected failure');
+}
+const links = process.env.GH_STUB_UNLINKED ? {} : { parent: flag('--parent'), blocked: flag('--blocked-by'), project: flag('--project') };
+if (cmd === 'label') state.labels.push(argv[2]);
+else if (sub === 'create') {
+  const labels = flags('--label').flatMap((l) => l.split(','));
+  for (const l of labels) if (!state.labels.includes(l)) die(`could not add label: '${l}' not found`);
+  const parent = links.parent ? issue(Number(links.parent)).number : null;
+  const blockedBy = nums(links.blocked).map((n) => issue(n).number);
+  const number = state.next++;
+  state.issues.push({ number, title: flag('--title'), state: 'OPEN', body: readFileSync(0, 'utf8'), labels, parent, blockedBy, projects: links.project ? [links.project] : [] });
+  say(`https://github.com/stub/repo/issues/${number}`);
+} else {
+  const i = issue(Number(argv[2]));
+  if (flag('--parent')) i.parent = issue(Number(flag('--parent'))).number;
+  for (const n of nums(flag('--add-blocked-by'))) i.blockedBy.push(issue(n).number);
+  if (flag('--add-project')) i.projects.push(flag('--add-project'));
+}
+state.writes.push(argv);
+save();
