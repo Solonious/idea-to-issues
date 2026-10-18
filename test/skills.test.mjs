@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
-const SKILLS = ['concept', 'grilling', 'blueprint', 'specs'];
+const SKILLS = ['concept', 'grilling', 'blueprint', 'specs', 'tickets'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -49,7 +49,7 @@ test('every skill talks in the language setting, which the plugin declares', () 
 });
 
 test('each gated stage skill hands off to its gate and never stamps', () => {
-  for (const name of ['concept', 'blueprint']) {
+  for (const name of ['concept', 'blueprint', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
     for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
@@ -74,7 +74,7 @@ test('the blueprint skill asks for the strongest model', () => {
 });
 
 test('each later stage skill checks its gates before anything else', () => {
-  for (const name of ['blueprint', 'specs']) {
+  for (const name of ['blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const lines = body.split('\n');
     const first = lines.findIndex((l) => l.startsWith('## Step'));
@@ -153,6 +153,45 @@ test('the epic template has its preamble in order, the walking skeleton first an
   assert.ok(lines[head + 2].startsWith('| 1 | KEY-1 | Walking skeleton'));
   assert.ok(lines[head + 2].endsWith('| none |'));
   assert.ok(lines.includes('| AC | Covered by |'));
+});
+
+test('the tickets skill resumes at gate 3, settles the Project, and files only after the dry run and the owner\'s yes', () => {
+  const { body } = splitFront(read('skills/tickets/SKILL.md'));
+  const step2 = body.slice(body.indexOf('## Step 2'), body.indexOf('## Step 3'));
+  assert.ok(step2.includes('i2i.mjs gate require file'), 'a re-run checks gate 3 before ordering anything');
+  const dry = body.indexOf('i2i.mjs file --dry-run');
+  const apply = body.indexOf('i2i.mjs file --apply');
+  const verify = body.indexOf('i2i.mjs verify --wait');
+  assert.ok(body.indexOf('Choose the Project') < dry, 'the Project is settled before the dry run');
+  assert.ok(dry >= 0 && apply > dry, 'the dry run comes before the apply');
+  assert.match(body.slice(dry, apply), /owner's yes/, 'the apply waits for the owner\'s yes');
+  assert.ok(verify > apply, 'verify --wait runs after the apply');
+});
+
+test('the tickets skill names a gh write only in a never rule or as a command for the owner', () => {
+  const { body } = splitFront(read('skills/tickets/SKILL.md'));
+  const write = /\bgh (issue|label|project) (create|edit|link|item-add)\b/g;
+  assert.ok([...body.matchAll(write)].length > 0);
+  for (const line of body.split('\n')) {
+    if (/never/i.test(line)) continue;
+    for (const m of line.matchAll(write)) {
+      assert.equal(line.slice(m.index - 3, m.index), '`! ', `only the owner runs a gh write: ${line}`);
+    }
+  }
+});
+
+test('the tickets gate falls back to check --render without the Artifact tool', () => {
+  const { body } = splitFront(read('skills/tickets/SKILL.md'));
+  assert.ok(body.includes('If the Artifact tool is not in your tool list'));
+  assert.ok(body.includes('i2i.mjs check --render docs/specs'));
+});
+
+test('the index template lists the epics by file name, key and title, with no front matter', () => {
+  const lines = read('skills/tickets/references/index-template.md').split('\n');
+  assert.equal(lines[0], '# Epic order');
+  const items = lines.filter((l) => /^\d+\. /.test(l));
+  assert.ok(items.length >= 2);
+  items.forEach((l, k) => assert.match(l, new RegExp(`^${k + 1}\\. [a-z0-9-]+ — \\[[A-Z][A-Z0-9]*\\] \\S`)));
 });
 
 test('the ADR template has context, decision and rejected alternatives', () => {

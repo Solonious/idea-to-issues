@@ -2,7 +2,7 @@
 
 A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the concept, blueprint and specs stages are in; the tickets stage is still being built. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the four stages are in; the release-time evals are still being built. Progress is tracked in this repository's issues.
 
 ## What it does
 
@@ -28,6 +28,8 @@ Stage 1 is `/idea-to-issues:concept`. Give it your idea and, if you have one, a 
 Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. Run this stage on your strongest model. The skill asks for `model: best`, which lasts only for its first turn, so switch with `/model best` before you start.
 
 Stage 3 is `/idea-to-issues:specs`. It starts with `i2i gate require specs` and stops unless the blueprint is approved and unchanged since. It writes one `docs/specs/<key>.md` per epic in the blueprint: acceptance criteria in the contract format, a slice table with the epic's walking skeleton first, a coverage table, and the `### [KEY-N]` ticket blocks. It runs `i2i check docs/specs` and fixes every finding before it hands over to the tickets stage; `check` enforces the structure, and whether an acceptance criterion is measurable stays the agent's review. Commit `docs/specs` before the tickets stage, which pins it at gate 3. A cheaper model, such as Sonnet, is enough for this stage.
+
+Stage 4 is `/idea-to-issues:tickets`. It starts with `i2i gate require tickets` and `i2i check docs/specs`, and stops unless both pass. It asks you to order the epics and writes the order to `docs/specs/index.md`; inside an epic, the order follows from the blockers. `file` does not read this order and files the epics in file-name order: the order is what gate 3 approves and what the build follows. The stage shows gate 3 as a private Artifact page with the epic → ticket graph, or as the `check --render` table in the terminal, and you approve `docs/specs/index.md` with `/idea-to-issues:approve tickets`. It then asks which GitHub Project the epics go into. It never creates one, so a new Project is yours to create with `gh project create`, and its "Auto-add sub-issues to project" workflow should be on, because `file` adds only the epics. It shows `i2i file --dry-run`, runs `i2i file --apply` only on your yes, and ends when `i2i verify --wait` exits 0. A run that was interrupted starts again at the dry run, which lists only the writes still missing.
 
 ### The fixed stack
 
