@@ -1,0 +1,37 @@
+{
+  "_doc": "Configuration of the conveyor plugin for the owner's sessions in this repo, which run the installed release (conveyor@conveyor, enabled in the gitignored .claude/settings.local.json). Nothing committed enables the plugin, so a clone without it simply ignores this file. Read it ONLY through conveyor-config (get <key> | source <key> | check); it is validated against the installed plugin's schema/conveyor.schema.json. Change the next-issue keys with /conveyor:config, or edit by hand. A key absent here is the reader's built-in default.",
+  "version": 1,
+  "language": "uk",
+  "repo": "Solonious/idea-to-issues",
+  "branches": {
+    "_doc": "base == trunk is trunk mode: a ticket PR merges straight into main, /land closes the issue, and no promotion follows.",
+    "base": "main",
+    "trunk": "main"
+  },
+  "labels": {
+    "_doc": "Label names the conveyor applies or excludes on; conveyor-doctor checks that every one exists. No landed label: in trunk mode /land closes the issue instead.",
+    "inProgress": "claude:in-progress",
+    "parked": "design:parked",
+    "premiseDisproved": "premise:disproved",
+    "bug": "bug",
+    "exclude": ["design:parked", "claude:in-progress"]
+  },
+  "gates": {
+    "_doc": "verify is THE gate list, in /pipeline's order. plugin_valid_ok and node_tests_ok are named by no /pipeline step, so each is run by its command and is green when that command exits 0; they are the two checks .github/workflows/ci.yml runs. Their names avoid tests_ok and build_ok, which /pipeline steps verify with npm scripts this repo does not have. review_ok is the judgement gate, the review verdict of /pipeline Step 2. No prePush: this repo has no pre-push hook.",
+    "verify": [
+      {
+        "name": "plugin_valid_ok",
+        "command": "claude plugin validate --strict .",
+        "enforcedBy": ".github/workflows/ci.yml"
+      },
+      {
+        "name": "node_tests_ok",
+        "command": "node --test",
+        "enforcedBy": ".github/workflows/ci.yml"
+      },
+      {
+        "name": "review_ok"
+      }
+    ]
+  }
+}

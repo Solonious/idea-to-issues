@@ -1,0 +1,5 @@
+# conveyor run ledger, written mid-run by conveyor-run-report: never part of a ticket commit
+.claude/metrics/
+
+# per-clone settings, where the local-scope plugin install is enabled
+.claude/settings.local.json
