@@ -29,6 +29,30 @@ Each stage starts by checking that the stage before it is approved and has not c
 
 Before gate 3, `check` rejects a ticket graph that is cyclic, leaves an acceptance criterion uncovered, or is malformed. The spec format is `docs/CONTRACT.md`.
 
+### Gate stamps
+
+An approval is front matter on the gate's document. There is no state file.
+
+```yaml
+---
+approved: 2026-10-18
+digest: sha256:<hash of the document body>
+based-on: docs/CONCEPT.md@<commit sha>
+---
+```
+
+| Gate | Document | `based-on` |
+|---|---|---|
+| concept | `docs/CONCEPT.md` | none |
+| blueprint | `docs/blueprint.md` | `docs/CONCEPT.md` |
+| tickets | `docs/specs/index.md` | `docs/specs`, without `index.md` itself |
+
+- `digest` pins the approved body, so a document edited after its approval no longer counts as approved.
+- `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
+- `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing.
+
+Only `/idea-to-issues:approve <gate>` calls `gate stamp`, and its `disable-model-invocation: true` means only you can fire it, not the agent. An agent with Bash can still run `i2i.mjs gate stamp` directly. A user-only command turns "forgot the gate" into "deliberately forged it", which is the most a plugin can do.
+
 ## The spine: `bin/i2i.mjs`
 
 One zero-dependency Node tool with four modes:
