@@ -1,0 +1,396 @@
+[
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrH0VQ",
+          "number": 12,
+          "state": "OPEN",
+          "title": "[STAGE-4] tickets skill — epic order, gate-3 page, dry-run then file",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/12"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 13,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHeQg",
+      "number": 3,
+      "state": "OPEN",
+      "title": "[EVAL] Release-time eval suite",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/3"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[EVAL-1] three release-time eval cases — upstream edit, cyclic graph, no Artifact tool"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHpZg",
+          "number": 8,
+          "state": "OPEN",
+          "title": "[CORE-4] verify — compare the approved spec blocks with what GitHub holds",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/8"
+        },
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHnNg",
+          "number": 7,
+          "state": "CLOSED",
+          "title": "[CORE-3] file --dry-run and --apply — idempotent, dependency-ordered filing keyed by GitHub titles",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/7"
+        },
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHyKQ",
+          "number": 11,
+          "state": "OPEN",
+          "title": "[STAGE-3] specs skill — measurable ACs and [KEY-N] ticket blocks that pass check",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/11"
+        }
+      ],
+      "totalCount": 3
+    },
+    "number": 12,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHcqA",
+      "number": 2,
+      "state": "OPEN",
+      "title": "[STAGE] The four stage skills — concept, blueprint, specs, tickets",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/2"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[STAGE-4] tickets skill — epic order, gate-3 page, dry-run then file"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHhZQ",
+          "number": 5,
+          "state": "CLOSED",
+          "title": "[CORE-2] spec parser and check — the ticket contract enforced before gate 3",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/5"
+        },
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHviw",
+          "number": 10,
+          "state": "OPEN",
+          "title": "[STAGE-2] blueprint skill — fixed-stack architecture, ADRs and a rendered gate-2 page",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/10"
+        }
+      ],
+      "totalCount": 2
+    },
+    "number": 11,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHcqA",
+      "number": 2,
+      "state": "OPEN",
+      "title": "[STAGE] The four stage skills — concept, blueprint, specs, tickets",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/2"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[STAGE-3] specs skill — measurable ACs and [KEY-N] ticket blocks that pass check"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHryQ",
+          "number": 9,
+          "state": "OPEN",
+          "title": "[STAGE-1] concept skill — competitor scan, one-question-at-a-time interview, docs/CONCEPT.md",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/9"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 10,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHcqA",
+      "number": 2,
+      "state": "OPEN",
+      "title": "[STAGE] The four stage skills — concept, blueprint, specs, tickets",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/2"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[STAGE-2] blueprint skill — fixed-stack architecture, ADRs and a rendered gate-2 page"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHkUw",
+          "number": 6,
+          "state": "CLOSED",
+          "title": "[CORE-5] gate stamp and require, and a user-only approve command — approvals live in front matter",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/6"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 9,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHcqA",
+      "number": 2,
+      "state": "OPEN",
+      "title": "[STAGE] The four stage skills — concept, blueprint, specs, tickets",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/2"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[STAGE-1] concept skill — competitor scan, one-question-at-a-time interview, docs/CONCEPT.md"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHnNg",
+          "number": 7,
+          "state": "CLOSED",
+          "title": "[CORE-3] file --dry-run and --apply — idempotent, dependency-ordered filing keyed by GitHub titles",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/7"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 8,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHbgg",
+      "number": 1,
+      "state": "OPEN",
+      "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/1"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE-4] verify — compare the approved spec blocks with what GitHub holds"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHkUw",
+          "number": 6,
+          "state": "CLOSED",
+          "title": "[CORE-5] gate stamp and require, and a user-only approve command — approvals live in front matter",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/6"
+        },
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHhZQ",
+          "number": 5,
+          "state": "CLOSED",
+          "title": "[CORE-2] spec parser and check — the ticket contract enforced before gate 3",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/5"
+        }
+      ],
+      "totalCount": 2
+    },
+    "number": 7,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHbgg",
+      "number": 1,
+      "state": "OPEN",
+      "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/1"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "98236657",
+          "name": "Done"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE-3] file --dry-run and --apply — idempotent, dependency-ordered filing keyed by GitHub titles"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHfhA",
+          "number": 4,
+          "state": "CLOSED",
+          "title": "[CORE-1] plugin skeleton, marketplace entry and CI that validates the plugin and runs node --test",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/4"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 6,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHbgg",
+      "number": 1,
+      "state": "OPEN",
+      "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/1"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "98236657",
+          "name": "Done"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE-5] gate stamp and require, and a user-only approve command — approvals live in front matter"
+  },
+  {
+    "blockedBy": {
+      "nodes": [
+        {
+          "id": "I_kwDOVMNuic8AAAABXrHfhA",
+          "number": 4,
+          "state": "CLOSED",
+          "title": "[CORE-1] plugin skeleton, marketplace entry and CI that validates the plugin and runs node --test",
+          "url": "https://github.com/Solonious/idea-to-issues/issues/4"
+        }
+      ],
+      "totalCount": 1
+    },
+    "number": 5,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHbgg",
+      "number": 1,
+      "state": "OPEN",
+      "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/1"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "98236657",
+          "name": "Done"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE-2] spec parser and check — the ticket contract enforced before gate 3"
+  },
+  {
+    "blockedBy": {
+      "nodes": [],
+      "totalCount": 0
+    },
+    "number": 4,
+    "parent": {
+      "id": "I_kwDOVMNuic8AAAABXrHbgg",
+      "number": 1,
+      "state": "OPEN",
+      "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes",
+      "url": "https://github.com/Solonious/idea-to-issues/issues/1"
+    },
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "98236657",
+          "name": "Done"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE-1] plugin skeleton, marketplace entry and CI that validates the plugin and runs node --test"
+  },
+  {
+    "blockedBy": {
+      "nodes": [],
+      "totalCount": 0
+    },
+    "number": 3,
+    "parent": null,
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[EVAL] Release-time eval suite"
+  },
+  {
+    "blockedBy": {
+      "nodes": [],
+      "totalCount": 0
+    },
+    "number": 2,
+    "parent": null,
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[STAGE] The four stage skills — concept, blueprint, specs, tickets"
+  },
+  {
+    "blockedBy": {
+      "nodes": [],
+      "totalCount": 0
+    },
+    "number": 1,
+    "parent": null,
+    "projectItems": [
+      {
+        "status": {
+          "optionId": "f75ad846",
+          "name": "Todo"
+        },
+        "title": "Idea to Issues — backlog"
+      }
+    ],
+    "title": "[CORE] Deterministic spine — one zero-dependency Node tool with four modes"
+  }
+]
