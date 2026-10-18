@@ -61,7 +61,7 @@ One zero-dependency Node tool with four modes:
 |---|---|
 | `check` | validates the spec blocks before gate 3 |
 | `file --dry-run \| --apply [--limit N] [--project <title>]` | creates Issues, parent and blocked-by links, labels and Project items in dependency order |
-| `verify` | compares the approved spec blocks with what GitHub holds |
+| `verify [--wait] [--interval <s>] [--timeout <s>]` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
 
 Run `node bin/i2i.mjs --help` for the usage.
@@ -69,6 +69,19 @@ Run `node bin/i2i.mjs --help` for the usage.
 ### Filing
 
 `file` refuses unless gate 3 passes (`gate require file`) and `check` passes, then files `docs/specs`, the directory gate 3 approved. On every run it rebuilds the key to number map from GitHub issue titles (`[KEY]` epics, `[KEY-N]` tickets, open and closed) and writes no map. `--dry-run` prints every write and makes none; `--apply` performs them in order, and `--limit N` stops after N writes. A re-run skips the keys GitHub already holds and only adds missing links. `--project <title>` names the Project; only epic parents are added to it, because GitHub adds their sub-issues itself.
+
+### Verifying
+
+`verify` runs after filing and never writes. Like `file`, it refuses unless gate 3 and `check` pass. It then reads `gh issue list --state all`, native links only, and checks every key of `docs/specs` against it. It reports four defects:
+
+- `missing-issue`: no issue holds a key.
+- `duplicate-issue`: a key is held by two issues, as in `KEY-7 held by #12 and #31`.
+- `parent`: a ticket has no parent, or a parent other than its epic.
+- `missing-blocker`: a `blocked-by` key is not a native blocker of the ticket.
+
+Each defect is printed as `[KEY] rule: message` on stderr, and the exit code is 1. When there is no defect, the exit code is 0. A key that the specs do not define is ignored.
+
+GitHub fills in a Project after the write that triggered it, for example when it adds an epic's sub-issues. `--wait` polls the listing every `--interval` seconds (default 5) until two consecutive polls agree. Two polls agree when they show the same issues, parents, blockers and Project item counts. Only then does `verify` compare. If the listing is still changing after `--timeout` seconds (default 120), `verify` exits 1 and verifies nothing.
 
 ## Install
 

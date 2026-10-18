@@ -1,40 +1,10 @@
 // File mode: read what GitHub holds, plan the writes still missing, perform them in order.
 // There is no state file; the key -> number map is rebuilt from issue titles on every run.
-import { spawnSync } from 'node:child_process';
-
-const LIMIT = 1000;
-const KEY_IN_TITLE = /^\[([A-Z][A-Z0-9]*(?:-[1-9]\d*)?)\]/;
-
-function gh(root, args, input) {
-  const r = spawnSync('gh', args, { cwd: root, encoding: 'utf8', input, env: { ...process.env, GH_PROMPT_DISABLED: '1' } });
-  if (r.error?.code === 'ENOENT') throw new Error('gh is not installed or not on PATH');
-  if (r.error) throw r.error;
-  if (r.status !== 0) throw new Error(r.stderr.trim() || `gh exited with status ${r.status}`);
-  return r.stdout;
-}
-
-// A listing that hit its limit may hide the rest, and a plan built on it would duplicate issues.
-function list(root, noun, args) {
-  let rows;
-  try {
-    rows = JSON.parse(gh(root, [noun, 'list', '--limit', String(LIMIT), ...args]));
-  } catch (err) {
-    throw new Error(`gh ${noun} list failed: ${err.message}`);
-  }
-  if (rows.length >= LIMIT) throw new Error(`gh ${noun} list returned ${LIMIT} ${noun === 'issue' ? 'issues' : 'labels'}, its limit, so the listing may be truncated; nothing was written`);
-  return rows;
-}
+import { gh, list, readIssues } from './github.mjs';
 
 function readGithub(root, need) {
-  const issues = list(root, 'issue', ['--state', 'all', '--json', 'number,title,parent,blockedBy,projectItems']);
+  const { groups } = readIssues(root, 'number,title,parent,blockedBy,projectItems');
   const labels = new Set(list(root, 'label', ['--json', 'name']).map((l) => l.name));
-  const truncated = issues.find((i) => (i.blockedBy?.totalCount ?? 0) > (i.blockedBy?.nodes.length ?? 0));
-  if (truncated) throw new Error(`gh issue list returned only part of the blockers of #${truncated.number}, so the listing may be truncated; nothing was written`);
-  const groups = new Map();
-  for (const i of issues.sort((a, b) => a.number - b.number)) {
-    const key = KEY_IN_TITLE.exec(i.title)?.[1];
-    if (key) groups.set(key, [...(groups.get(key) ?? []), i]);
-  }
   for (const key of need) {
     const g = groups.get(key);
     if (g?.length > 1) throw new Error(`${key} is held by ${g.map((i) => `#${i.number}`).join(' and ')}: close or retitle one, then run again`);

@@ -4,13 +4,18 @@ import { join } from 'node:path';
 import { parseSpecs, checkSpecs, renderTable, formatFinding } from './lib/spec.mjs';
 import { STAGES, repoRoot, resolveGate, requireStage, stamp } from './lib/gate.mjs';
 import { planFile, describe, perform } from './lib/file.mjs';
+import { readIssues } from './lib/github.mjs';
+import { verifyIssues, formatDefect, waitSettled } from './lib/verify.mjs';
 
 const MODES = {
-  check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3', issue: 5 },
-  file: { usage: 'file --dry-run | --apply [--limit N] [--project <title>]', summary: 'file Issues, links, labels and Project items in dependency order', issue: 7 },
-  verify: { usage: 'verify', summary: 'compare the approved spec blocks with what GitHub holds', issue: 8 },
-  gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter', issue: 6 },
+  check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3' },
+  file: { usage: 'file --dry-run | --apply [--limit N] [--project <title>]', summary: 'file Issues, links, labels and Project items in dependency order' },
+  verify: { usage: 'verify [--wait] [--interval <s>] [--timeout <s>]', summary: 'compare the approved spec blocks with what GitHub holds' },
+  gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter' },
 };
+
+// Seconds between two --wait polls, and the most --wait spends before it gives up.
+const WAIT = { interval: 5, timeout: 120 };
 
 const COL = Math.max(...Object.values(MODES).map((m) => m.usage.length)) + 2;
 const HELP = `Usage: i2i <mode> [options]
@@ -96,6 +101,39 @@ function runGate(args) {
   return 0;
 }
 
+// The spec blocks gate 3 approved: the gate holds and check passes. Otherwise it reports why
+// and returns the exit code instead.
+function approvedSpec(mode, err, bare) {
+  const cwd = process.cwd();
+  const root = repoRoot(cwd);
+  if (root === undefined) {
+    err(`${cwd} is not inside a git repository`);
+    return { code: 2 };
+  }
+  const gate = requireStage(root, 'file');
+  for (const note of gate.notes) err(`note: ${note}`);
+  if (gate.problems.length > 0) {
+    gate.problems.forEach(err);
+    bare(`${mode}: may not run (${gate.problems.length} problem(s))`);
+    return { code: 1 };
+  }
+  let spec;
+  try {
+    spec = parseSpecs(join(root, STAGES.specs.doc));
+    if (spec.files.length === 0) throw new Error(`no epic files in ${STAGES.specs.doc}`);
+  } catch (e) {
+    err(e.message);
+    return { code: 1 };
+  }
+  const { findings, order } = checkSpecs(spec);
+  if (findings.length > 0) {
+    findings.forEach((f) => bare(formatFinding(f)));
+    bare(`${mode}: check found ${findings.length} finding(s)`);
+    return { code: 1 };
+  }
+  return { root, spec, order };
+}
+
 function runFile(args) {
   const usage = () => {
     process.stderr.write('Usage: i2i file --dry-run | --apply [--limit N] [--project <title>]\n');
@@ -118,33 +156,10 @@ function runFile(args) {
   const err = (s) => process.stderr.write(`i2i file: ${s}\n`);
   const bare = (s) => process.stderr.write(`${s}\n`);
   const out = (s) => process.stdout.write(`${s}\n`);
-  const cwd = process.cwd();
-  const root = repoRoot(cwd);
-  if (root === undefined) {
-    err(`${cwd} is not inside a git repository`);
-    return 2;
-  }
-  const gate = requireStage(root, 'file');
-  for (const note of gate.notes) err(`note: ${note}`);
-  if (gate.problems.length > 0) {
-    gate.problems.forEach(err);
-    bare(`file: may not run (${gate.problems.length} problem(s))`);
-    return 1;
-  }
-  let spec, plan;
-  try {
-    spec = parseSpecs(join(root, STAGES.specs.doc));
-    if (spec.files.length === 0) throw new Error(`no epic files in ${STAGES.specs.doc}`);
-  } catch (e) {
-    err(e.message);
-    return 1;
-  }
-  const { findings, order } = checkSpecs(spec);
-  if (findings.length > 0) {
-    findings.forEach((f) => bare(formatFinding(f)));
-    bare(`file: check found ${findings.length} finding(s)`);
-    return 1;
-  }
+  const approved = approvedSpec('file', err, bare);
+  if (approved.code !== undefined) return approved.code;
+  const { root, spec, order } = approved;
+  let plan;
   try {
     plan = planFile(root, spec, order, project);
   } catch (e) {
@@ -182,6 +197,50 @@ function runFile(args) {
   return 0;
 }
 
+function runVerify(args) {
+  const usage = () => {
+    process.stderr.write('Usage: i2i verify [--wait] [--interval <s>] [--timeout <s>]\n');
+    return 2;
+  };
+  let wait = false;
+  const seconds = {};
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--wait' && !wait) wait = true;
+    else if (a === '--interval' || a === '--timeout') {
+      const name = a.slice(2);
+      const v = args[++i];
+      if (!/^(\d+\.?\d*|\.\d+)$/.test(v ?? '') || Number(v) <= 0 || seconds[name] !== undefined) return usage();
+      seconds[name] = Number(v);
+    } else return usage();
+  }
+  if (!wait && Object.keys(seconds).length > 0) return usage();
+  const err = (s) => process.stderr.write(`i2i verify: ${s}\n`);
+  const bare = (s) => process.stderr.write(`${s}\n`);
+  const out = (s) => process.stdout.write(`${s}\n`);
+  const approved = approvedSpec('verify', err, bare);
+  if (approved.code !== undefined) return approved.code;
+  const { root, spec, order } = approved;
+  const read = () => readIssues(root, wait ? 'number,title,parent,blockedBy,projectItems' : 'number,title,parent,blockedBy');
+  let listing;
+  try {
+    const { interval, timeout } = { ...WAIT, ...seconds };
+    listing = wait ? waitSettled(read, { interval: interval * 1000, timeout: timeout * 1000 }) : read();
+  } catch (e) {
+    err(e.message);
+    return 1;
+  }
+  if (wait) out(`verify: the listing settled after ${listing.polls} polls`);
+  const defects = verifyIssues(spec, order, listing.groups);
+  if (defects.length > 0) {
+    defects.forEach((d) => bare(formatDefect(d)));
+    bare(`verify: ${defects.length} defect(s)`);
+    return 1;
+  }
+  out(`verify: ${spec.epics.length} epic(s), ${order.length} ticket(s); GitHub holds each key once, with its parent and blockers`);
+  return 0;
+}
+
 function main(argv) {
   const major = Number(process.versions.node.split('.')[0]);
   if (major < 20) {
@@ -206,9 +265,7 @@ function main(argv) {
   if (mode === 'check') return runCheck(argv.slice(1));
   if (mode === 'gate') return runGate(argv.slice(1));
   if (mode === 'file') return runFile(argv.slice(1));
-
-  process.stderr.write(`i2i ${mode}: not implemented yet (#${MODES[mode].issue})\n`);
-  return 1;
+  return runVerify(argv.slice(1));
 }
 
 process.exitCode = main(process.argv.slice(2));

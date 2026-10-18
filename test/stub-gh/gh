@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // A stand-in for gh on PATH. State lives in the JSON file named by GH_STUB_STATE; anything it does not know fails loudly.
 // GH_STUB_TRUNCATE=1 fills `issue list` to its limit, GH_STUB_FAIL_AT=k fails the k-th write, GH_STUB_UNLINKED=1 drops parent, blocked-by and project on create.
+// GH_STUB_LISTING=<file> answers `issue list` with a captured gh response instead of the state, GH_STUB_SETTLE=k gives the first issue
+// of the p-th of the first k `issue list` calls p extra Project items, as a listing reads while GitHub is still adding them.
 const { existsSync, readFileSync, writeFileSync, writeSync } = require('node:fs');
 
 const say = (text) => writeSync(1, `${text}\n`);
@@ -30,8 +32,18 @@ if (sub === 'list' && (cmd === 'issue' || cmd === 'label')) {
     blockedBy: (i) => ({ nodes: i.blockedBy.map((number) => ({ number, state: 'OPEN' })), totalCount: i.blockedBy.length }),
     projectItems: (i) => i.projects.map((title) => ({ title })),
   };
-  const issues = process.env.GH_STUB_TRUNCATE ? Array.from({ length: limit }, (_, k) => ({ number: k + 1, title: `[FILLER-${k + 1}] filler`, labels: [], parent: null, blockedBy: [], projects: [] })) : state.issues;
-  say(JSON.stringify(issues.map((i) => Object.fromEntries(fields.map((f) => [f, shape[f](i)])))));
+  const captured = process.env.GH_STUB_LISTING && JSON.parse(readFileSync(process.env.GH_STUB_LISTING, 'utf8'));
+  const field = (i, f) => (!captured ? shape[f](i) : Object.hasOwn(i, f) ? i[f] : die(`stub gh: the captured listing has no ${f}`));
+  const issues = process.env.GH_STUB_TRUNCATE ? Array.from({ length: limit }, (_, k) => ({ number: k + 1, title: `[FILLER-${k + 1}] filler`, labels: [], parent: null, blockedBy: [], projects: [] })) : captured || state.issues;
+  const rows = issues.map((i) => Object.fromEntries(fields.map((f) => [f, field(i, f)])));
+  if (process.env.GH_STUB_SETTLE) {
+    state.lists = (state.lists ?? 0) + 1;
+    save();
+    if (state.lists <= Number(process.env.GH_STUB_SETTLE) && rows[0]?.projectItems) {
+      rows[0].projectItems = [...rows[0].projectItems, ...Array.from({ length: state.lists }, () => ({ title: 'pending' }))];
+    }
+  }
+  say(JSON.stringify(rows));
   process.exit(0);
 }
 
