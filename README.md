@@ -2,7 +2,7 @@
 
 A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the concept stage are in; the other stages are still being built. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the concept and blueprint stages are in; the other stages are still being built. Progress is tracked in this repository's issues.
 
 ## What it does
 
@@ -24,6 +24,12 @@ Each stage starts by checking that the stage before it is approved and has not c
 ### Running a stage
 
 Stage 1 is `/idea-to-issues:concept`. Give it your idea and, if you have one, a prototype link. It scans a few close products, interviews you one question at a time, and writes `docs/CONCEPT.md`. It ends by asking you to run `/idea-to-issues:approve concept`.
+
+Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. Run this stage on your strongest model. The skill asks for `model: best`, which lasts only for its first turn, so switch with `/model best` before you start.
+
+### The fixed stack
+
+The blueprint always designs on the same stack: an Nx monorepo, an Angular web app on Vercel, a NestJS API on Railway, and Prisma for data access. That is the author's opinion, not a recommendation for every product, and the plugin offers no other stack. What the stack leaves open, such as the database engine, is recorded as an ADR. A product the stack cannot serve, such as a native mobile app, is flagged at gate 2 rather than quietly redesigned.
 
 ## The three gates
 
@@ -52,6 +58,7 @@ based-on: docs/CONCEPT.md@<commit sha>
 | tickets | `docs/specs/index.md` | `docs/specs`, without `index.md` itself |
 
 - `digest` pins the approved body, so a document edited after its approval no longer counts as approved.
+- The blueprint's digest covers `docs/blueprint.md` only, not `docs/adr/`. Each ADR's decision is repeated in one line in the blueprint's Decisions table, so that line is what gate 2 approves.
 - `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
 - `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing.
 
