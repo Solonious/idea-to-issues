@@ -27,7 +27,7 @@ Each stage starts by checking that the stage before it is approved and has not c
 2. **Blueprint**: the owner reviews the architecture on a rendered page.
 3. **Tickets**: the owner reviews the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub.
 
-Before gate 3, `check` rejects a ticket graph that is cyclic, leaves an acceptance criterion uncovered, or is malformed.
+Before gate 3, `check` rejects a ticket graph that is cyclic, leaves an acceptance criterion uncovered, or is malformed. The spec format is `docs/CONTRACT.md`.
 
 ## The spine: `bin/i2i.mjs`
 
