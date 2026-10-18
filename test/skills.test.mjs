@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const read = (p) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
-const SKILLS = ['concept', 'grilling'];
+const SKILLS = ['concept', 'grilling', 'blueprint'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -32,7 +32,7 @@ test('each skill has name and description front matter, and the name matches its
   }
 });
 
-test('both skills talk in the language setting, which the plugin declares', () => {
+test('every skill talks in the language setting, which the plugin declares', () => {
   for (const name of SKILLS) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes('${user_config.language}'), `${name} uses the language setting`);
@@ -44,11 +44,13 @@ test('both skills talk in the language setting, which the plugin declares', () =
   }
 });
 
-test('the concept skill hands off to gate 1 and never stamps', () => {
-  const { body } = splitFront(read('skills/concept/SKILL.md'));
-  assert.ok(body.includes('/idea-to-issues:approve concept'));
-  for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
-    assert.match(line, /never/i, `only the never rule may mention gate stamp: ${line}`);
+test('each gated stage skill hands off to its gate and never stamps', () => {
+  for (const name of ['concept', 'blueprint']) {
+    const { body } = splitFront(read(`skills/${name}/SKILL.md`));
+    assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
+    for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
+      assert.match(line, /never/i, `${name}: only the never rule may mention gate stamp: ${line}`);
+    }
   }
 });
 
@@ -60,4 +62,54 @@ test('the concept template has the five sections in order and no front matter', 
   const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
   assert.deepEqual(headings, ['Problem', 'Who it is for', 'Competitors', 'Rulings', 'Open threads']);
   assert.ok(lines.includes('| Product | What it does | How we differ | Source |'));
+});
+
+test('the blueprint skill asks for the strongest model', () => {
+  const { front } = splitFront(read('skills/blueprint/SKILL.md'));
+  assert.ok(front.includes('model: best'));
+});
+
+test('the blueprint skill checks gate 1 before anything else', () => {
+  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
+  const lines = body.split('\n');
+  const first = lines.findIndex((l) => l.startsWith('## Step'));
+  assert.ok(first >= 0);
+  const next = lines.findIndex((l, i) => i > first && l.startsWith('## '));
+  const section = lines.slice(first, next).join('\n');
+  assert.ok(section.includes('i2i.mjs gate require blueprint'));
+  assert.ok(first < lines.indexOf('## Step 4: Write `docs/blueprint.md`'));
+});
+
+test('the blueprint skill builds on the fixed stack', () => {
+  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
+  for (const word of ['Nx', 'Angular', 'NestJS', 'Prisma', 'Vercel', 'Railway']) {
+    assert.ok(body.includes(word), `mentions ${word}`);
+  }
+});
+
+test('the blueprint gate falls back to a markdown summary without the Artifact tool', () => {
+  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
+  assert.ok(body.includes('If the Artifact tool is not in your tool list'));
+  assert.ok(body.includes('markdown summary'));
+});
+
+test('the blueprint template has its sections in order, a mermaid diagram and the walking skeleton first', () => {
+  const lines = read('skills/blueprint/references/blueprint-template.md').split('\n');
+  assert.notEqual(lines[0], '---');
+  assert.ok(lines[0].startsWith('# Blueprint'));
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Stack', 'Architecture', 'Domain model', 'Modules', 'API surface', 'Screens', 'Decisions', 'Epics', 'Open threads']);
+  assert.ok(lines.includes('```mermaid'));
+  const head = lines.indexOf('| # | Key | Epic | Delivers |');
+  assert.ok(head >= 0);
+  assert.ok(lines[head + 2].startsWith('| 1 |'));
+  assert.ok(lines[head + 2].includes('Walking skeleton'));
+});
+
+test('the ADR template has context, decision and rejected alternatives', () => {
+  const lines = read('skills/blueprint/references/adr-template.md').split('\n');
+  assert.notEqual(lines[0], '---');
+  assert.ok(lines[0].startsWith('# '));
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Context', 'Decision', 'Rejected alternatives', 'Consequences']);
 });
