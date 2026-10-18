@@ -1,10 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const read = (p) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
-const SKILLS = ['concept', 'grilling', 'blueprint'];
+const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
+const read = (p) => readFileSync(path(p), 'utf8');
+const SKILLS = ['concept', 'grilling', 'blueprint', 'specs'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -69,15 +73,16 @@ test('the blueprint skill asks for the strongest model', () => {
   assert.ok(front.includes('model: best'));
 });
 
-test('the blueprint skill checks gate 1 before anything else', () => {
-  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
-  const lines = body.split('\n');
-  const first = lines.findIndex((l) => l.startsWith('## Step'));
-  assert.ok(first >= 0);
-  const next = lines.findIndex((l, i) => i > first && l.startsWith('## '));
-  const section = lines.slice(first, next).join('\n');
-  assert.ok(section.includes('i2i.mjs gate require blueprint'));
-  assert.ok(first < lines.indexOf('## Step 4: Write `docs/blueprint.md`'));
+test('each later stage skill checks its gates before anything else', () => {
+  for (const name of ['blueprint', 'specs']) {
+    const { body } = splitFront(read(`skills/${name}/SKILL.md`));
+    const lines = body.split('\n');
+    const first = lines.findIndex((l) => l.startsWith('## Step'));
+    assert.ok(first >= 0, `${name}: has steps`);
+    const next = lines.findIndex((l, i) => i > first && l.startsWith('## '));
+    const section = lines.slice(first, next).join('\n');
+    assert.ok(section.includes(`i2i.mjs gate require ${name}`), `${name}: first step requires its gate`);
+  }
 });
 
 test('the blueprint skill builds on the fixed stack', () => {
@@ -104,6 +109,50 @@ test('the blueprint template has its sections in order, a mermaid diagram and th
   assert.ok(head >= 0);
   assert.ok(lines[head + 2].startsWith('| 1 |'));
   assert.ok(lines[head + 2].includes('Walking skeleton'));
+});
+
+test('the specs skill runs check before it hands over to the tickets stage, and never stamps', () => {
+  const { body } = splitFront(read('skills/specs/SKILL.md'));
+  assert.ok(body.includes('i2i.mjs check docs/specs'));
+  assert.ok(body.includes('/idea-to-issues:tickets'));
+  assert.ok(!body.includes('/idea-to-issues:approve specs'));
+  const lines = body.split('\n');
+  const check = lines.findIndex((l) => l.startsWith('## Step 7: Run check'));
+  const hand = lines.findIndex((l) => l.startsWith('## Step 8: Hand off'));
+  assert.ok(check >= 0 && hand > check, 'check step precedes hand-off');
+  for (const line of lines.filter((l) => l.includes('gate stamp'))) {
+    assert.match(line, /never/i, `only the never rule may mention gate stamp: ${line}`);
+  }
+});
+
+test('the specs skill never splits by layer and leaves measurability to the agent', () => {
+  const { body } = splitFront(read('skills/specs/SKILL.md'));
+  assert.match(body, /never split by layer/i);
+  assert.ok(body.includes('enforces the format only'));
+  assert.ok(body.includes('measurable'));
+});
+
+test('the epic template passes check as it is', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'i2i-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  copyFileSync(path('skills/specs/references/epic-template.md'), join(dir, 'key.md'));
+  const r = spawnSync(process.execPath, [path('bin/i2i.mjs'), 'check', dir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /^check: 1 epics, 2 tickets, 2 ACs, 0 findings$/m);
+  assert.equal(r.stderr, '');
+});
+
+test('the epic template has its preamble in order, the walking skeleton first and a coverage table', () => {
+  const lines = read('skills/specs/references/epic-template.md').split('\n');
+  assert.notEqual(lines[0], '---');
+  assert.ok(lines[0].startsWith('# [KEY] '));
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Acceptance criteria', 'Slices', 'Coverage', 'Tickets']);
+  const head = lines.indexOf('| # | Ticket | Delivers | Blocked by |');
+  assert.ok(head >= 0);
+  assert.ok(lines[head + 2].startsWith('| 1 | KEY-1 | Walking skeleton'));
+  assert.ok(lines[head + 2].endsWith('| none |'));
+  assert.ok(lines.includes('| AC | Covered by |'));
 });
 
 test('the ADR template has context, decision and rejected alternatives', () => {
