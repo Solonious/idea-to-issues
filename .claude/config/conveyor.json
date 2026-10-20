@@ -17,17 +17,19 @@
     "exclude": ["design:parked", "claude:in-progress"]
   },
   "gates": {
-    "_doc": "verify is THE gate list, in /pipeline's order. plugin_valid_ok and node_tests_ok are named by no /pipeline step, so each is run by its command and is green when that command exits 0; they are the two checks .github/workflows/ci.yml runs. Their names avoid tests_ok and build_ok, which /pipeline steps verify with npm scripts this repo does not have. review_ok is the judgement gate, the review verdict of /pipeline Step 2. No prePush: this repo has no pre-push hook.",
+    "_doc": "verify is THE gate list, in /pipeline's order. plugin_valid_ok and node_tests_ok are named by no /pipeline step, so each is run by its command and is green when that command exits 0; they are the two checks .github/workflows/ci.yml runs. Their names avoid tests_ok and build_ok, which /pipeline steps verify with npm scripts this repo does not have. review_ok is the judgement gate, the review verdict of /pipeline Step 2. prePush is what the plugin's pre-push hook (conveyor-git-hooks, installed by conveyor-setup --yes) runs after its secret scan, for a push that is not docs-only: both checks, the same commands CI runs, with no when — each reads the whole plugin, and node --test takes ~10s. review_ok has no command, so no prePush.",
     "verify": [
       {
         "name": "plugin_valid_ok",
         "command": "claude plugin validate --strict .",
-        "enforcedBy": ".github/workflows/ci.yml"
+        "enforcedBy": ".github/workflows/ci.yml",
+        "prePush": { "command": "claude plugin validate --strict ." }
       },
       {
         "name": "node_tests_ok",
         "command": "node --test",
-        "enforcedBy": ".github/workflows/ci.yml"
+        "enforcedBy": ".github/workflows/ci.yml",
+        "prePush": { "command": "node --test" }
       },
       {
         "name": "review_ok"
