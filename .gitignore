@@ -1,5 +1,8 @@
-# conveyor run ledger, written mid-run by conveyor-run-report: never part of a ticket commit
-.claude/metrics/
+# conveyor run spool, written mid-run by conveyor-run-report: never part of a ticket commit.
+# The archive and composition conveyor-promote-runs writes between runs are tracked.
+.claude/metrics/*
+!.claude/metrics/history.jsonl
+!.claude/metrics/composition.jsonl
 
 # per-clone settings, where the local-scope plugin install is enabled
 .claude/settings.local.json
