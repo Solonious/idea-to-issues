@@ -35,5 +35,21 @@
         "name": "review_ok"
       }
     ]
+  },
+  "pricing": {
+    "_doc": "USD per 1,000,000 tokens, read from _source on _asOf; conveyor-run-report prints _asOf on every report. Move _asOf whenever a price changes; rows already in the ledger keep the prices they were priced at. A model missing here is named in the report and withholds the total: add it from the page, never guess. cacheRead is set only where the page gives a model its own cache-hit price (0.025x input on Fable 5.1, 0.05x on Opus 5.5 and Sonnet 5.5); Haiku 5.5 uses cacheMultipliers.read. Haiku 5.5 is priced by prompt length: a request whose prompt (input + cache writes + cache reads) is over 100,000 tokens pays its longContext prices.",
+    "_asOf": "2026-10-21",
+    "_source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "cacheMultipliers": { "write5m": 1.25, "write1h": 2.0, "read": 0.1 },
+    "models": {
+      "claude-fable-5-1": { "input": 10, "output": 50, "cacheRead": 0.25 },
+      "claude-opus-5-5": { "input": 4, "output": 20, "cacheRead": 0.2 },
+      "claude-sonnet-5-5": { "input": 2, "output": 10, "cacheRead": 0.1 },
+      "claude-haiku-5-5": {
+        "input": 0.1,
+        "output": 0.5,
+        "longContext": { "threshold": 100000, "input": 0.5, "output": 2.5, "cacheRead": 0.05 }
+      }
+    }
   }
 }
