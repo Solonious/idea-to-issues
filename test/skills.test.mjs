@@ -85,6 +85,21 @@ test('each later stage skill checks its gates before anything else', () => {
   }
 });
 
+test('after a refusal, each later stage waits for a new invocation of itself', () => {
+  for (const name of ['blueprint', 'specs', 'tickets']) {
+    const { body } = splitFront(read(`skills/${name}/SKILL.md`));
+    const rule = `After a refusal, wait until the owner invokes \`/idea-to-issues:${name}\` again.`;
+    const step1 = body.slice(body.indexOf('## Step 1'), body.indexOf('## Step 2'));
+    assert.ok(step1.includes(rule), `${name}: the gate step carries the rule`);
+    const refusals = body.split('\n').filter((l) => /verbatim and stop|no longer holds: stop/.test(l));
+    assert.ok(refusals.length > 0, `${name}: has a refusal`);
+    for (const line of refusals) {
+      assert.ok(line.includes(rule), `${name}: a refusal waits for a new invocation: ${line}`);
+      assert.ok(line.includes('is not an invocation'), `${name}: a later message or \`!\` output does not resume it`);
+    }
+  }
+});
+
 test('the blueprint skill builds on the fixed stack', () => {
   const { body } = splitFront(read('skills/blueprint/SKILL.md'));
   for (const word of ['Nx', 'Angular', 'NestJS', 'Prisma', 'Vercel', 'Railway']) {
