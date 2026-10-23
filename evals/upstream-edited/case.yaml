@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: upstream-edited
+description: The concept was edited after the blueprint was approved, so the specs stage must stop and name the change.
+tags: [release]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: |
+    Run /idea-to-issues:specs.
+graders:
+  - name: ran-the-gate
+    type: tool_used
+    tool: Bash
+    input_match: 'gate require specs'
+  - name: names-the-change
+    type: regex
+    pattern: 'CONCEPT\.md (was edited|changed) after'
+  - name: no-specs-written
+    type: file_exists
+    path: 'docs/specs/**'
+    exists: false
+  - name: wrote-nothing
+    type: tool_used
+    tool: Write
+    min: 0
+    max: 0

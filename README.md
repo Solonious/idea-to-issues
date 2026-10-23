@@ -2,7 +2,7 @@
 
 A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the four stages are in; the release-time evals are still being built. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the four stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
 
 ## What it does
 
@@ -135,6 +135,24 @@ claude plugin validate .
 ```
 
 CI runs both on every push and pull request.
+
+## Releasing
+
+Three evals under `evals/` run before a release. Each starts from a scaffolded workspace.
+
+- `upstream-edited`: the concept was edited after the blueprint was approved. The specs stage must stop and name the change.
+- `cyclic-graph`: a spec holds a dependency cycle. The tickets stage must file nothing and `check` must report the cycle.
+- `no-artifact-tool`: gate 2 runs without the Artifact tool. The markdown fallback must render.
+
+```bash
+claude plugin eval . --runs 1 --ablation none --scaffold --allow-tools 'Bash(i2i.mjs:*)' 'Bash(node:*)' Write
+```
+
+One suite run is three full agent runs, one per case, on your own credential. `--ablation none` skips the no-plugin baseline arm, and every grader is free, so there are no judge calls. The blueprint case costs the most, because that stage runs on the strongest model. `--max-cost-usd <usd>` sets a ceiling.
+
+No case can reach GitHub. No grant names `gh`. The scaffolds create no remote and never approve gate 3, so `i2i file` refuses before it calls `gh`. A grader fails any run that calls `gh` or `file --apply`.
+
+The evals are a release checklist, not CI. The scaffold test in `node --test` checks the fixtures on every push.
 
 ## Credits
 
