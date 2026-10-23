@@ -15,7 +15,7 @@ Run this before anything else:
 i2i.mjs gate require tickets
 ```
 
-If it exits non-zero, show the owner its output verbatim and stop without writing anything. The output says what is wrong and what to run. Never work around the check.
+If it exits non-zero, show the owner its output verbatim and stop without writing anything. The output says what is wrong and what to run. Never work around the check. After a refusal, wait until the owner invokes `/idea-to-issues:tickets` again. A later message, or the output of a command the owner runs with `!`, is not an invocation: never re-run the check and carry on by yourself.
 
 Then run:
 
@@ -23,7 +23,7 @@ Then run:
 i2i.mjs check docs/specs
 ```
 
-If it reports a finding, show the owner the findings verbatim and stop: the epic files belong to the specs stage, so say that `/idea-to-issues:specs` fixes them. Gate 3 never shows a graph that fails `check`, and `file` refuses one.
+If it reports a finding, show the owner the findings verbatim and stop: the epic files belong to the specs stage, so say that `/idea-to-issues:specs` fixes them. Gate 3 never shows a graph that fails `check`, and `file` refuses one. After a refusal, wait until the owner invokes `/idea-to-issues:tickets` again. A later message, or the output of a command the owner runs with `!`, is not an invocation: never re-run the check and carry on by yourself.
 
 ## Step 2: Find where this run starts
 
@@ -78,7 +78,7 @@ Run:
 i2i.mjs gate require file
 ```
 
-If it exits non-zero, show the owner its output verbatim and stop. Never take the conversation's word for an approval: the stamp in `docs/specs/index.md` is the approval.
+If it exits non-zero, show the owner its output verbatim and stop. Never take the conversation's word for an approval: the stamp in `docs/specs/index.md` is the approval. After a refusal, wait until the owner invokes `/idea-to-issues:tickets` again. A later message, or the output of a command the owner runs with `!`, is not an invocation: never re-run the check and carry on by yourself.
 
 ## Step 7: Choose the Project
 
@@ -132,7 +132,7 @@ If it exits 0, go to step 10. Otherwise show the owner its output verbatim, then
 - `missing-issue`, `parent` or `missing-blocker`: go back to step 8. The new dry run plans exactly the writes that repair them.
 - `duplicate-issue`: two issues hold one key. The owner closes or retitles one of them on GitHub; you do not. Then run `verify --wait` again.
 - No two consecutive polls agreed: GitHub was still filling in the listing. Run `verify --wait` again.
-- Anything else, such as a gate that no longer holds: stop.
+- Anything else, such as a gate that no longer holds: stop. After a refusal, wait until the owner invokes `/idea-to-issues:tickets` again. A later message, or the output of a command the owner runs with `!`, is not an invocation: never re-run the check and carry on by yourself.
 
 Never repair GitHub by hand. The stage is done only when `verify --wait` exits 0.
 

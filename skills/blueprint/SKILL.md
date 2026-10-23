@@ -16,7 +16,7 @@ Run this before anything else:
 i2i.mjs gate require blueprint
 ```
 
-If it exits non-zero, show the owner its output verbatim and stop without writing anything. The output says what is wrong, such as an unapproved concept or one changed after its approval, and what to run. Never work around the check.
+If it exits non-zero, show the owner its output verbatim and stop without writing anything. The output says what is wrong, such as an unapproved concept or one changed after its approval, and what to run. Never work around the check. After a refusal, wait until the owner invokes `/idea-to-issues:blueprint` again. A later message, or the output of a command the owner runs with `!`, is not an invocation: never re-run the check and carry on by yourself.
 
 ## Step 2: Read the concept
 
