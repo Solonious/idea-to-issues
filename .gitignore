@@ -6,3 +6,13 @@
 
 # per-clone settings, where the local-scope plugin install is enabled
 .claude/settings.local.json
+
+# conveyor (/conveyor:setup): run logs and scratch the plugin writes under tmp/ — never part of a ticket commit
+tmp/insights-weekly/
+tmp/next-issue/
+tmp/mockup-*
+
+# conveyor (/conveyor:setup): what a lane run (conveyor-lane-runner) writes in the primary checkout — never part of a ticket commit
+.claude/pipeline-status.json
+.claude/pipeline-status.json.lock/
+.claude/worktrees/
