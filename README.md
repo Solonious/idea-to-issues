@@ -35,6 +35,12 @@ Stage 4 is `/idea-to-issues:tickets`. It starts with `i2i gate require tickets` 
 
 The blueprint always designs on the same stack: an Nx monorepo, an Angular web app on Vercel, a NestJS API on Railway, and Prisma for data access. That is the author's opinion, not a recommendation for every product, and the plugin offers no other stack. What the stack leaves open, such as the database engine, is recorded as an ADR. A product the stack cannot serve, such as a native mobile app, is flagged at gate 2 rather than quietly redesigned.
 
+### Stack defaults
+
+The plugin also ships the owner's default for every stack category a product may need: the layers above, the UI library, the runtime services (auth, file storage, email, push, payments, AI APIs) and three operations categories (CI/CD, error tracking, analytics). They are the `CATEGORIES` list in `bin/lib/stack.mjs`. Each entry names its default and, unless the category is always needed, the concept question that decides whether a product needs it. CI/CD, error tracking and analytics are always needed.
+
+[`docs/stack-defaults.md`](docs/stack-defaults.md) records, per category, the options considered, the reasons and the sources. The stack stage that argues these defaults per product is not built yet; until it is, the blueprint designs on the fixed stack. Defaults age: changing one is a PR to `CATEGORIES` and to its section in that file.
+
 ## The three gates
 
 1. **Concept**: the owner rules on the open questions, one question at a time.
