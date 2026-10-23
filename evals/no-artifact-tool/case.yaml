@@ -1,0 +1,26 @@
+schema_version: "1.1"
+name: no-artifact-tool
+description: Gate 2 runs where the Artifact tool is off, so the markdown fallback must render.
+tags: [release]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
+  prompt: |
+    Run /idea-to-issues:blueprint. Decide every technical question yourself; the concept leaves no product question for the owner.
+graders:
+  - name: blueprint-written
+    type: file_exists
+    path: 'docs/blueprint.md'
+  - name: diagram-in-the-message
+    type: regex
+    pattern: '```mermaid'
+  - name: names-the-file
+    type: regex
+    pattern: 'docs/blueprint\.md'
+  - name: asks-for-approval
+    type: regex
+    pattern: '/idea-to-issues:approve blueprint'

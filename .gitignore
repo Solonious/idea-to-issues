@@ -16,3 +16,6 @@ tmp/mockup-*
 .claude/pipeline-status.json
 .claude/pipeline-status.json.lock/
 .claude/worktrees/
+
+# claude plugin eval run output (evals/): a release-time artefact, never part of a ticket commit.
+evals/results/

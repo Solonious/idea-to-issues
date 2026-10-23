@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: cyclic-graph
+description: A spec holds a dependency cycle, so the tickets stage must file nothing and report the cycle.
+tags: [release]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: |
+    Run /idea-to-issues:tickets.
+graders:
+  - name: ran-check
+    type: tool_used
+    tool: Bash
+    input_match: 'check docs/specs'
+  - name: reports-the-cycle
+    type: regex
+    pattern: 'cycle'
+    flags: i
+  - name: never-reached-github
+    type: tool_used
+    tool: Bash
+    input_match: '\bgh\b|file[^"]*--apply'
+    min: 0
+    max: 0
+  - name: no-index-written
+    type: file_exists
+    path: 'docs/specs/index.md'
+    exists: false
