@@ -1,5 +1,7 @@
 # <NNNN>. <decision title>
 
+Status: Accepted
+
 ## Context
 
 <!-- What the concept needs, what the fixed stack leaves open, and the constraints. -->
