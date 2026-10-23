@@ -51,6 +51,13 @@ The document covers:
 
 Write one ADR per hard-to-reverse choice, from [references/adr-template.md](references/adr-template.md), as `docs/adr/NNNN-<slug>.md` numbered from `0001`. A choice is hard to reverse when undoing it later takes a data migration, a rewrite across modules, or a change the user notices. Each ADR gives the context, the decision, and every rejected alternative with the reason it was rejected. The fixed stack is not an ADR: it was not chosen here.
 
+Never delete an ADR and never rewrite one to match what was decided later: the gap between what was decided and what was built is part of the record. When a revised blueprint changes a recorded decision, write a new ADR with the next number and change only the old ADR's `Status:` line, plus the note an amendment needs, leaving the rest of it as it is:
+
+- `Status: Superseded by ADR-NNNN` when the decision is reversed;
+- `Status: Accepted — amended by ADR-NNNN` when the decision holds but part of the record was wrong, with a one-line note under it on which part to distrust.
+
+The Decisions table in `docs/blueprint.md` then names the new ADR.
+
 ## Step 6: Present gate 2
 
 Build the gate page after the documents are written, from `docs/blueprint.md` and the ADRs and nothing else. The page is a view of the markdown: every diagram node, decision and epic on it appears in the markdown under the same name, and the page says that the approval is of `docs/blueprint.md`. When the owner asks for a change while reviewing it, change the markdown first, then rebuild the page from it. Nothing is decided only on the page.

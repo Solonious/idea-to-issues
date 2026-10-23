@@ -194,10 +194,19 @@ test('the index template lists the epics by file name, key and title, with no fr
   items.forEach((l, k) => assert.match(l, new RegExp(`^${k + 1}\\. [a-z0-9-]+ — \\[[A-Z][A-Z0-9]*\\] \\S`)));
 });
 
-test('the ADR template has context, decision and rejected alternatives', () => {
+test('the ADR template has a status line, context, decision and rejected alternatives', () => {
   const lines = read('skills/blueprint/references/adr-template.md').split('\n');
   assert.notEqual(lines[0], '---');
   assert.ok(lines[0].startsWith('# '));
+  assert.equal(lines[2], 'Status: Accepted');
   const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
   assert.deepEqual(headings, ['Context', 'Decision', 'Rejected alternatives', 'Consequences']);
+});
+
+test('a changed decision gets a successor ADR, never a rewrite', () => {
+  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
+  const step5 = body.slice(body.indexOf('## Step 5'), body.indexOf('## Step 6'));
+  assert.ok(step5.includes('Never delete an ADR and never rewrite one'));
+  assert.ok(step5.includes('`Status: Superseded by ADR-NNNN`'));
+  assert.ok(step5.includes('`Status: Accepted — amended by ADR-NNNN`'));
 });
