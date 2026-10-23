@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +20,8 @@ function scaffold(t, name) {
   t.after(() => rmSync(tmp, { recursive: true, force: true }));
   const cwd = join(tmp, 'workspace');
   const home = join(tmp, 'home');
-  spawnSync('mkdir', ['-p', cwd, home]);
+  mkdirSync(cwd);
+  mkdirSync(home);
   const env = { PATH: process.env.PATH, HOME: home, TMPDIR: tmp, TERM: 'dumb' };
   const r = spawnSync('bash', [join(EVALS, name, 'scaffold.sh')], { cwd, env, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
@@ -31,7 +32,7 @@ const i2i = ({ cwd, env }, ...args) => spawnSync(process.execPath, [BIN, ...args
 const git = ({ cwd, env }, ...args) => spawnSync('git', args, { cwd, env, encoding: 'utf8' }).stdout.trim();
 
 test('there are three eval cases', () => {
-  assert.deepEqual(CASES.sort(), ['cyclic-graph', 'no-artifact-tool', 'upstream-edited']);
+  assert.deepEqual([...CASES].sort(), ['cyclic-graph', 'no-artifact-tool', 'upstream-edited']);
 });
 
 test('upstream-edited: the specs gate refuses and names the edited concept', (t) => {
