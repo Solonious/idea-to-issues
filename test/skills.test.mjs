@@ -5,6 +5,7 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CATEGORIES } from '../bin/lib/stack.mjs';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
@@ -78,6 +79,32 @@ test('the concept template has the five sections in order and no front matter', 
   const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
   assert.deepEqual(headings, ['Problem', 'Who it is for', 'Competitors', 'Rulings', 'Open threads']);
   assert.ok(lines.includes('| Product | What it does | How we differ | Source |'));
+  assert.ok(lines.some((l) => /^\d+\. .*\[stack: .+\]$/.test(l)), 'a ruling line shows the stack tag');
+});
+
+test('the concept asks every product-dependent stack question as CATEGORIES words it, grouped by shared question, and never an always-on one', () => {
+  const ref = read('skills/concept/references/stack-questions.md');
+  const groups = new Map();
+  for (const c of CATEGORIES) if (!c.always) groups.set(c.question, [...(groups.get(c.question) ?? []), c.category]);
+  const expected = [...groups].map(([q, cats]) => `| ${cats.map((c) => `\`${c}\``).join(', ')} | ${q} |`);
+  const rows = ref.slice(ref.indexOf('## Stack categories')).split('\n').filter((l) => l.startsWith('| `'));
+  assert.deepEqual(rows, expected);
+  for (const fact of ['platform', 'users', 'offline', 'budget']) assert.ok(ref.includes(`| ${fact} | `), `${fact} is asked`);
+  for (const c of CATEGORIES) if (c.always) assert.ok(!ref.includes(`| \`${c.category}\``), `${c.category} is never asked`);
+  assert.ok(ref.includes('`ci-cd`, `error-tracking` and `analytics` are always needed'));
+});
+
+test('the concept reads the approved brainstorm summary, asks the stack questions and runs no competitor scan of its own', () => {
+  const skill = read('skills/concept/SKILL.md');
+  assert.doesNotMatch(skill, /competitor scan|web search|3–5/i, 'the scan is gone, front matter included');
+  assert.ok(skill.includes('docs/brainstorm/summary.md'));
+  assert.ok(skill.includes('Competitor takeaways'));
+  assert.ok(skill.includes('references/stack-questions.md'));
+  for (const w of ['the platform', 'the number of users', 'offline use', 'the budget']) assert.ok(skill.includes(w), `${w} is in the frontier`);
+  assert.ok(skill.includes('[stack: '));
+  const template = read('skills/concept/references/concept-template.md');
+  assert.doesNotMatch(template, /3–5 rows|web search/);
+  assert.ok(template.includes('Competitor takeaways'));
 });
 
 test('the brainstorm summary template has the five sections in order and no front matter', () => {
