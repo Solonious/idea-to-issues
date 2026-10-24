@@ -39,6 +39,34 @@ approve() {
   commit "approve $1"
 }
 
+brainstorm_approved() {
+  write docs/brainstorm/summary.md <<'DOC'
+# Brainstorm summary: Plant reminders
+
+## Chosen shape
+
+A web app that reminds one person to water each of their plants.
+
+## Key scenarios
+
+1. Passing a pot, the user checks when it was last watered and marks it done.
+
+## Rejected alternatives
+
+- A paper calendar — rejected because it is never at hand when the user passes the pot.
+
+## Competitor takeaways
+
+The competitors activity was skipped.
+
+## Skipped activities
+
+competitors
+DOC
+  commit brainstorm
+  approve brainstorm
+}
+
 concept_approved() {
   write docs/CONCEPT.md <<'DOC'
 # Concept

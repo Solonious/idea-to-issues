@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Gates 1 and 2 approved, and one spec whose two tickets block each other.
+# Gates 0, 1 and 2 approved, and one spec whose two tickets block each other.
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/chain.sh"
 init_repo
+brainstorm_approved
 concept_approved
 blueprint_approved
 write docs/specs/auth.md <<'SPEC'

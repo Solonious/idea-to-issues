@@ -1,29 +1,32 @@
 # idea-to-issues
 
-A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: concept, blueprint, specs, tickets.
+A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the four stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the five stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
 
 ## What it does
 
-You bring an idea. The plugin walks it through four stages, one session each. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
+You bring an idea. The plugin walks it through five stages. Every stage but the brainstorm is one session; the brainstorm runs across as many as you want. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
 
 The agent holds the judgement: the concept, the architecture, the specs, and whether an acceptance criterion is measurable. Code holds the structure, the gate stamps and every GitHub write.
 
-## The four stages
+## The five stages
 
 | Stage | Output | Ends at |
 |---|---|---|
+| brainstorm | `docs/brainstorm/notes.md` (working notes), `docs/brainstorm/summary.md` | gate 0 |
 | concept | `docs/CONCEPT.md` | gate 1 |
 | blueprint | `docs/blueprint.md`, `docs/adr/` | gate 2 |
 | specs | `docs/specs/<epic>.md`, with acceptance criteria and `### [KEY-N]` ticket blocks | the mechanical `check` |
 | tickets | `docs/specs/index.md` (epic order), then the Issues | gate 3 |
 
-Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English. Each gate page is shown entirely in the conversation language, keys, technology names and paths aside, and says which English document you approve.
+Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English. Each gate page is shown entirely in the conversation language, keys, technology names and paths aside, and says which English document you approve. Gate 0 has no page: the brainstorm shows its summary in the terminal, translated, and names the English document you approve.
 
 ### Running a stage
 
-Stage 1 is `/idea-to-issues:concept`. Give it your idea and, if you have one, a prototype link. It scans a few close products, interviews you one question at a time, and writes `docs/CONCEPT.md`. It ends by asking you to run `/idea-to-issues:approve concept`.
+Stage 0 is `/idea-to-issues:brainstorm`. An idea alone is enough; a prototype link, earlier notes or competitors you already know are welcome, not needed. A working notes file, `docs/brainstorm/notes.md`, grows across as many sessions as you want. It proposes one activity at a time: user scenarios, an attack on the idea by two subagents with opposed positions (both arguments and both rebuttals are shown verbatim, and you rule), alternative product shapes, and a deep competitor analysis. When you say the brainstorm is done, it writes `docs/brainstorm/summary.md` (the chosen shape, the key scenarios, what was rejected and why), shows it translated in the terminal and asks you to run `/idea-to-issues:approve brainstorm`.
+
+Stage 1 is `/idea-to-issues:concept`. It starts with `i2i gate require concept` and stops unless the brainstorm summary is approved and unchanged since. Give it your idea and, if you have one, a prototype link. It scans a few close products, interviews you one question at a time, and writes `docs/CONCEPT.md`. It ends by asking you to run `/idea-to-issues:approve concept`.
 
 Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. Run this stage on your strongest model. The skill asks for `model: best`, which lasts only for its first turn, so start this stage's session with `claude --model best`: the flag applies to that session only. Inside a running session, open `/model` and press `s` on the strongest model's row instead. Typing `/model best` directly, or pressing Enter in the picker, also saves the model as the default for new sessions, so the next stage would run on it too. If that happened, open `/model`, select the model new sessions should start on, and press Enter.
 
@@ -41,8 +44,9 @@ The plugin also ships the owner's default for every stack category a product may
 
 [`docs/stack-defaults.md`](docs/stack-defaults.md) records, per category, the options considered, the reasons and the sources. The stack stage that argues these defaults per product is not built yet; until it is, the blueprint designs on the fixed stack. Defaults age: changing one is a PR to `CATEGORIES` and to its section in that file.
 
-## The three gates
+## The four gates
 
+0. **Brainstorm**: the owner reads the summary, translated, in the terminal and approves the English document.
 1. **Concept**: the owner rules on the open questions, one question at a time.
 2. **Blueprint**: the owner reviews the architecture on a rendered page.
 3. **Tickets**: the owner reviews the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub.
@@ -63,12 +67,14 @@ based-on: docs/CONCEPT.md@<commit sha>
 
 | Gate | Document | `based-on` |
 |---|---|---|
-| concept | `docs/CONCEPT.md` | none |
+| brainstorm | `docs/brainstorm/summary.md` | none |
+| concept | `docs/CONCEPT.md` | `docs/brainstorm/summary.md` |
 | blueprint | `docs/blueprint.md` | `docs/CONCEPT.md` |
 | tickets | `docs/specs/index.md` | `docs/specs`, without `index.md` itself |
 
 - `digest` pins the approved body, so a document edited after its approval no longer counts as approved.
 - The blueprint's digest covers `docs/blueprint.md` only, not `docs/adr/`. Each ADR's decision is repeated in one line in the blueprint's Decisions table, so that line is what gate 2 approves.
+- The concept's `based-on` pins `docs/brainstorm/summary.md` only, not `docs/brainstorm/notes.md`: the notes stay free to grow after gate 0.
 - `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
 - `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing.
 
