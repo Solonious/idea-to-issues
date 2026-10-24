@@ -107,6 +107,18 @@ test('the concept reads the approved brainstorm summary, asks the stack question
   assert.ok(template.includes('Competitor takeaways'));
 });
 
+test('the concept asks every question in the owner\'s language and keeps only the ruling text in English', () => {
+  const { body } = splitFront(read('skills/concept/SKILL.md'));
+  assert.ok(body.includes('Ask every question in ${user_config.language}, the stack questions included'));
+  assert.ok(body.includes('Only the ruling in `docs/CONCEPT.md` keeps the English question'));
+  assert.ok(!body.includes('asked as written'), 'no question is asked as written');
+  const ref = read('skills/concept/references/stack-questions.md');
+  assert.ok(ref.includes('in the owner\'s language, as a faithful translation'));
+  assert.ok(!ref.includes('on this page, as written'), 'the reference does not ask for the English wording');
+  const template = read('skills/concept/references/concept-template.md');
+  assert.ok(!template.includes('as asked'), 'a ruling records the reference wording, not the translation');
+});
+
 test('the brainstorm summary template has the five sections in order and no front matter', () => {
   const lines = read('skills/brainstorm/references/summary-template.md').split('\n');
   assert.notEqual(lines[0], '---');
