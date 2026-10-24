@@ -60,10 +60,12 @@ The Decisions table in `docs/blueprint.md` then names the new ADR.
 
 ## Step 6: Present gate 2
 
-Build the gate page after the documents are written, from `docs/blueprint.md` and the ADRs and nothing else. The page is a view of the markdown: every diagram node, decision and epic on it appears in the markdown under the same name, and the page says that the approval is of `docs/blueprint.md`. When the owner asks for a change while reviewing it, change the markdown first, then rebuild the page from it. Nothing is decided only on the page.
+Build the gate page after the documents are written, from `docs/blueprint.md` and the ADRs and nothing else. The page is a view of the markdown: every diagram node, decision and epic on it appears in the markdown under the same key, ADR number or technology name, and the page says that the approval is of the English document `docs/blueprint.md`. When the owner asks for a change while reviewing it, change the markdown first, then rebuild the page from it. Nothing is decided only on the page.
+
+The page is written entirely in ${user_config.language}: headings, intro, diagram labels, decisions, rejected alternatives and epics. Keys (`SKEL-1`), ADR numbers, technology names and paths stay as they are, so every item traces back to the markdown. The documents stay in English.
 
 - If the Artifact tool is in your tool list, publish the page as a private Artifact: the architecture diagram drawn from the mermaid block, the key decisions with each ADR's rejected alternatives, and the epics with the walking skeleton first. Give the owner the link.
-- If the Artifact tool is not in your tool list, print a markdown summary in the terminal instead: the document path, the Architecture mermaid block as it is, the Decisions table, the Epics table and the Open threads.
+- If the Artifact tool is not in your tool list, print a markdown summary in the terminal instead: the document path, the Architecture mermaid block as it is, the Decisions table, the Epics table and the Open threads. Its headings and explanations are in ${user_config.language}; the mermaid block and the tables are copied from the document as they are.
 
 ## Step 7: Hand off to gate 2
 

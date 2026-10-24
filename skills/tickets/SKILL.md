@@ -52,10 +52,12 @@ Write `docs/specs/index.md` from [references/index-template.md](references/index
 
 ## Step 4: Present gate 3
 
-Build the gate page from `docs/specs/index.md`, the epic files and the output of `i2i.mjs check --render docs/specs`, and nothing else. The page is a view of the markdown: every epic and ticket on it appears in the markdown under the same key and title. It says that the approval is of `docs/specs/index.md`, whose `based-on` line pins the epic files in `docs/specs` at the commit the owner approves against.
+Build the gate page from `docs/specs/index.md`, the epic files and the output of `i2i.mjs check --render docs/specs`, and nothing else. The page is a view of the markdown: every epic and ticket on it appears in the markdown under the same key. It says that the approval is of the English document `docs/specs/index.md`, whose `based-on` line pins the epic files in `docs/specs` at the commit the owner approves against.
+
+The page is written entirely in ${user_config.language}: headings, intro, epic and ticket titles, acceptance criteria and the graph's labels. Keys (`SKEL-1`), technology names and paths stay as they are, so every item traces back to the markdown. The documents stay in English.
 
 - If the Artifact tool is in your tool list, publish the page as a private Artifact: the epics in the approved order, each with its acceptance criteria and its tickets in dependency order (effort, `blocked-by`, `covers`), and the epic → ticket graph, with an edge for every `blocked-by`, across epics too. Give the owner the link.
-- If the Artifact tool is not in your tool list, print in the terminal instead: the path `docs/specs/index.md`, its epic order, and the output of `i2i.mjs check --render docs/specs` as it is.
+- If the Artifact tool is not in your tool list, print in the terminal instead: the path `docs/specs/index.md`, its epic order, and the output of `i2i.mjs check --render docs/specs` as it is. Its headings and explanations are in ${user_config.language}; the `check --render` output stays as it is.
 
 When the owner asks for a change while reviewing it:
 

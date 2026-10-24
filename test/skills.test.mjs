@@ -48,6 +48,18 @@ test('every skill talks in the language setting, which the plugin declares', () 
   }
 });
 
+test('every gate page is in the language setting and names the English document approved', () => {
+  const pages = SKILLS.filter((name) => read(`skills/${name}/SKILL.md`).includes('Build the gate page'));
+  for (const name of ['blueprint', 'tickets']) assert.ok(pages.includes(name), `${name} builds a gate page`);
+  for (const name of pages) {
+    const { body } = splitFront(read(`skills/${name}/SKILL.md`));
+    assert.ok(body.includes('The page is written entirely in ${user_config.language}'), `${name}: page language`);
+    assert.ok(body.includes('Keys (`SKEL-1`)'), `${name}: keys stay untranslated`);
+    assert.ok(body.includes('the approval is of the English document'), `${name}: names the approved document`);
+    assert.ok(body.includes('Its headings and explanations are in ${user_config.language}'), `${name}: terminal fallback`);
+  }
+});
+
 test('each gated stage skill hands off to its gate and never stamps', () => {
   for (const name of ['concept', 'blueprint', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));

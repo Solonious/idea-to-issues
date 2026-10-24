@@ -19,7 +19,7 @@ The agent holds the judgement: the concept, the architecture, the specs, and whe
 | specs | `docs/specs/<epic>.md`, with acceptance criteria and `### [KEY-N]` ticket blocks | the mechanical `check` |
 | tickets | `docs/specs/index.md` (epic order), then the Issues | gate 3 |
 
-Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English.
+Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English. Each gate page is shown entirely in the conversation language, keys, technology names and paths aside, and says which English document you approve.
 
 ### Running a stage
 
@@ -123,7 +123,7 @@ Or in two steps:
 
 | Option | Default | Purpose |
 |---|---|---|
-| `language` | English | The language the stage skills talk to you in. Set when you enable the plugin. Documents stay in English. |
+| `language` | English | The language the stage skills talk to you in and show gate pages in. Set when you enable the plugin. Documents stay in English. |
 
 ## Requirements
 
