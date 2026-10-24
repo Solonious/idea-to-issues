@@ -10,6 +10,7 @@ const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const APPROVE = fileURLToPath(new URL('../commands/approve.md', import.meta.url));
 const CONCEPT = '# Concept\n\nA tool for people who forget their plants.\n';
 const BLUEPRINT_BODY = '# Blueprint\n\nOne web app and one API.\n';
+const SUMMARY = '# Brainstorm summary: Plants\n\nA reminder per plant.\n';
 const SHA = /^[0-9a-f]{40}$/;
 
 // Git isolated from the user's configuration, so signing or hooks there cannot break a test commit.
@@ -69,9 +70,12 @@ function setup(t, { remote = true } = {}) {
   return { tmp, repo, origin };
 }
 
-// Gates 1 and 2 approved, committed and pushed.
+// Gates 0, 1 and 2 approved, committed and pushed.
 function approvedChain(t, opts) {
   const ctx = setup(t, opts);
+  write(ctx.repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(ctx.repo, 'brainstorm');
+  stamp(ctx.repo, 'brainstorm');
   write(ctx.repo, 'docs/CONCEPT.md', CONCEPT);
   commit(ctx.repo, 'concept');
   stamp(ctx.repo, 'concept');
@@ -84,6 +88,10 @@ function approvedChain(t, opts) {
 
 test('require fails while the upstream document is missing or unapproved, and passes once it is approved', (t) => {
   const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  git(repo, 'push', '--quiet');
   let r = i2i(repo, 'gate', 'require', 'blueprint');
   assert.equal(r.status, 1);
   assert.match(r.stderr, /docs\/CONCEPT\.md does not exist/);
@@ -99,7 +107,41 @@ test('require fails while the upstream document is missing or unapproved, and pa
   git(repo, 'push', '--quiet');
   r = i2i(repo, 'gate', 'require', 'blueprint');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: blueprint may start \(checked concept\)$/m);
+  assert.match(r.stdout, /^gate: blueprint may start \(checked brainstorm, concept\)$/m);
+});
+
+test('require concept fails while the brainstorm summary is missing, unapproved or edited after its approval, and passes once it is approved', (t) => {
+  const { repo } = setup(t);
+  let r = i2i(repo, 'gate', 'require', 'concept');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/brainstorm\/summary\.md does not exist: the brainstorm stage has not run/);
+
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'concept');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/brainstorm\/summary\.md is not approved: review it, then run \/idea-to-issues:approve brainstorm/);
+
+  stamp(repo, 'brainstorm');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'concept');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^gate: concept may start \(checked brainstorm\)$/m);
+
+  write(repo, 'docs/brainstorm/summary.md', read(repo, 'docs/brainstorm/summary.md') + '\nAlso a mobile app.\n');
+  r = i2i(repo, 'gate', 'require', 'concept');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/brainstorm\/summary\.md was edited after its approval on \d{4}-\d{2}-\d{2}/);
+});
+
+test('the brainstorm notes are not pinned: editing them after gate 0 disturbs no later gate', (t) => {
+  const { repo } = approvedChain(t);
+  write(repo, 'docs/brainstorm/notes.md', '# Brainstorm notes\n\n## 2026-10-24 — free\n\nMore ideas.\n');
+  commit(repo, 'notes');
+  git(repo, 'push', '--quiet');
+  assert.equal(i2i(repo, 'gate', 'require', 'concept').status, 0);
+  assert.equal(i2i(repo, 'gate', 'require', 'specs').status, 0);
 });
 
 test('require fails when the upstream document is edited after its own approval', (t) => {
@@ -149,7 +191,7 @@ test('with no upstream branch, require skips the remote half and says so', (t) =
   const r = i2i(repo, 'gate', 'require', 'specs');
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stderr, /note: no upstream branch is configured, so edits on the remote were not checked/);
-  assert.match(r.stdout, /^gate: specs may start \(checked concept, blueprint\)$/m);
+  assert.match(r.stdout, /^gate: specs may start \(checked brainstorm, concept, blueprint\)$/m);
 });
 
 test('a failing fetch fails the gate', (t) => {
@@ -162,14 +204,22 @@ test('a failing fetch fails the gate', (t) => {
 
 test('stamp writes a based-on sha that git rev-parse confirms, and keeps the rest of the document', (t) => {
   const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  let r = i2i(repo, 'gate', 'stamp', 'brainstorm');
+  assert.equal(r.status, 0, r.stderr);
+  const summary = read(repo, 'docs/brainstorm/summary.md');
+  assert.ok(summary.startsWith('---\napproved: '), summary);
+  assert.doesNotMatch(summary, /based-on:/, 'the brainstorm has nothing upstream');
+  commit(repo, 'approve brainstorm');
   write(repo, 'docs/CONCEPT.md', CONCEPT);
   commit(repo, 'concept');
-  let r = i2i(repo, 'gate', 'stamp', 'concept');
+  r = i2i(repo, 'gate', 'stamp', 'concept');
   assert.equal(r.status, 0, r.stderr);
   const concept = read(repo, 'docs/CONCEPT.md');
   assert.ok(concept.startsWith('---\napproved: '), concept);
   assert.ok(concept.endsWith(`\n---\n${CONCEPT}`), 'a document without front matter keeps its text byte for byte');
-  assert.doesNotMatch(concept, /based-on:/, 'the concept has nothing upstream');
+  assert.match(concept, /^based-on: docs\/brainstorm\/summary\.md@[0-9a-f]{40}$/m, 'the concept pins the brainstorm summary');
   commit(repo, 'approve concept');
 
   const original = `---\ntitle: Blueprint\nowner: Ann\n---\n${BLUEPRINT_BODY}`;
@@ -202,6 +252,9 @@ test('stamp writes a based-on sha that git rev-parse confirms, and keeps the res
 
 test('stamp refuses an upstream with uncommitted changes', (t) => {
   const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
   write(repo, 'docs/CONCEPT.md', CONCEPT);
   write(repo, 'docs/blueprint.md', BLUEPRINT_BODY);
   commit(repo, 'docs');
@@ -250,7 +303,7 @@ test('gate 3 pins the specs without its own document, and require file checks it
 
   let r = i2i(repo, 'gate', 'require', 'file');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: file may start \(checked concept, blueprint, tickets\)$/m);
+  assert.match(r.stdout, /^gate: file may start \(checked brainstorm, concept, blueprint, tickets\)$/m);
 
   write(repo, 'docs/specs/billing.md', '# [BILL] Billing\n');
   r = i2i(repo, 'gate', 'require', 'file');
@@ -272,11 +325,11 @@ test('require fails on front matter that is never closed', (t) => {
   assert.match(r.stderr, /docs\/CONCEPT\.md: the front matter opened on line 1 is never closed/);
 });
 
-test('require concept has nothing to check', (t) => {
+test('require brainstorm has nothing to check', (t) => {
   const { repo } = setup(t);
-  const r = i2i(repo, 'gate', 'require', 'concept');
+  const r = i2i(repo, 'gate', 'require', 'brainstorm');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: concept has no gate before it$/m);
+  assert.match(r.stdout, /^gate: brainstorm has no gate before it$/m);
 });
 
 test('gate usage errors exit 2', (t) => {

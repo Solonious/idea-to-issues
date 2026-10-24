@@ -8,7 +8,8 @@ import { join, relative, resolve } from 'node:path';
 // Every stage in order. A gated stage's document carries the stamp; `file` is not a stage of its own,
 // it names the filing step, which needs gate 3.
 export const STAGES = {
-  concept: { doc: 'docs/CONCEPT.md', gate: true },
+  brainstorm: { doc: 'docs/brainstorm/summary.md', gate: true },
+  concept: { doc: 'docs/CONCEPT.md', gate: true, upstream: 'brainstorm' },
   blueprint: { doc: 'docs/blueprint.md', gate: true, upstream: 'concept' },
   specs: { doc: 'docs/specs', upstream: 'blueprint' },
   tickets: { doc: 'docs/specs/index.md', gate: true, upstream: 'specs' },

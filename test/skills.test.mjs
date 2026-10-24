@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
-const SKILLS = ['concept', 'grilling', 'blueprint', 'specs', 'tickets'];
+const SKILLS = ['brainstorm', 'concept', 'grilling', 'blueprint', 'specs', 'tickets'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -61,7 +61,7 @@ test('every gate page is in the language setting and names the English document 
 });
 
 test('each gated stage skill hands off to its gate and never stamps', () => {
-  for (const name of ['concept', 'blueprint', 'tickets']) {
+  for (const name of ['brainstorm', 'concept', 'blueprint', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
     for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
@@ -80,13 +80,42 @@ test('the concept template has the five sections in order and no front matter', 
   assert.ok(lines.includes('| Product | What it does | How we differ | Source |'));
 });
 
+test('the brainstorm summary template has the five sections in order and no front matter', () => {
+  const lines = read('skills/brainstorm/references/summary-template.md').split('\n');
+  assert.notEqual(lines[0], '---');
+  assert.ok(lines[0].startsWith('# Brainstorm summary'));
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Chosen shape', 'Key scenarios', 'Rejected alternatives', 'Competitor takeaways', 'Skipped activities']);
+});
+
+test('the brainstorm keeps an append-only, activity-tagged notes log, starts from an idea alone, and proposes activities in order', () => {
+  const { body } = splitFront(read('skills/brainstorm/SKILL.md'));
+  assert.ok(body.includes('`## <YYYY-MM-DD> — scenarios | attack | alternatives | competitors | free`'));
+  assert.ok(body.includes('`Stopped at:`'));
+  assert.ok(body.includes('If the owner continues, go on to item 2.'), 'a session after the summary still reads the notes');
+  assert.ok(body.includes('scenarios → attack → alternatives → competitors'));
+  assert.ok(body.includes('or "none"'), 'an idea alone is enough');
+  assert.ok(body.includes('run them or finish anyway'));
+  assert.ok(body.includes('Skipped activities'));
+});
+
+test('the attack prints both sides verbatim with a rebuttal round, competitors cite opened sources, and gate 0 has no page', () => {
+  const { body } = splitFront(read('skills/brainstorm/SKILL.md'));
+  assert.ok(body.includes('verbatim'));
+  assert.ok(body.includes('rebuttal round'));
+  assert.ok(body.includes('If the Agent tool is not in your tool list'));
+  assert.ok(body.includes('a linked source you actually opened'));
+  assert.ok(body.includes('the approval is of the English document `docs/brainstorm/summary.md`'));
+  assert.ok(!body.includes('Build the gate page'), 'gate 0 is shown in the terminal, not on a page');
+});
+
 test('the blueprint skill asks for the strongest model', () => {
   const { front } = splitFront(read('skills/blueprint/SKILL.md'));
   assert.ok(front.includes('model: best'));
 });
 
 test('each later stage skill checks its gates before anything else', () => {
-  for (const name of ['blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const lines = body.split('\n');
     const first = lines.findIndex((l) => l.startsWith('## Step'));
@@ -98,7 +127,7 @@ test('each later stage skill checks its gates before anything else', () => {
 });
 
 test('after a refusal, each later stage waits for a new invocation of itself', () => {
-  for (const name of ['blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const rule = `After a refusal, wait until the owner invokes \`/idea-to-issues:${name}\` again.`;
     const step1 = body.slice(body.indexOf('## Step 1'), body.indexOf('## Step 2'));

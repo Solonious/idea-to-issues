@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Gate 1 approved on a concept that leaves no product question open.
+# Gates 0 and 1 approved on a concept that leaves no product question open.
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/chain.sh"
 init_repo
+brainstorm_approved
 write docs/CONCEPT.md <<'DOC'
 # Concept
 

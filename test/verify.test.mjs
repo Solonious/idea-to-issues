@@ -47,7 +47,7 @@ function stamp(repo, gate) {
   commit(repo, `approve ${gate}`);
 }
 
-// A repository with gates 1 and 2 approved, the given spec fixtures committed and, unless `approve` is false, gate 3 approved and pushed.
+// A repository with gates 0, 1 and 2 approved, the given spec fixtures committed and, unless `approve` is false, gate 3 approved and pushed.
 function approvedChain(t, { specs = ['core/core.md'], approve = true } = {}) {
   const tmp = mkdtempSync(join(tmpdir(), 'i2i-verify-'));
   t.after(() => rmSync(tmp, { recursive: true, force: true }));
@@ -58,6 +58,9 @@ function approvedChain(t, { specs = ['core/core.md'], approve = true } = {}) {
   git(tmp, 'init', '--quiet', '--bare', '-b', 'main', join(tmp, 'origin.git'));
   git(repo, 'remote', 'add', 'origin', join(tmp, 'origin.git'));
   git(repo, 'push', '--quiet', '-u', 'origin', 'main');
+  write(repo, 'docs/brainstorm/summary.md', '# Brainstorm summary: Plants\n\nA reminder per plant.\n');
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
   write(repo, 'docs/CONCEPT.md', '# Concept\n\nA tool for people who forget their plants.\n');
   commit(repo, 'concept');
   stamp(repo, 'concept');
