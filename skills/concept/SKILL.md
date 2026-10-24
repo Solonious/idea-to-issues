@@ -33,7 +33,9 @@ Run the grilling skill (`/idea-to-issues:grilling`) on the summary's Chosen shap
 - who it is for
 - what is in and out of the first version
 - how it differs from the products in the summary's Competitor takeaways
-- every question in [references/stack-questions.md](references/stack-questions.md): the four product facts (the platform, the number of users, offline use, the budget) and one question per group of stack categories, each asked as written there
+- every question in [references/stack-questions.md](references/stack-questions.md): the four product facts (the platform, the number of users, offline use, the budget) and one question per group of stack categories
+
+Ask every question in ${user_config.language}, the stack questions included: translate each one faithfully, adding nothing and dropping nothing. Only the ruling in `docs/CONCEPT.md` keeps the English question, exactly as written in the reference file, so the stack stage can match it.
 
 Ask the platform before the other stack questions; the recommended answer to each stack question follows from the platform and from the summary's Chosen shape and Key scenarios — name the line it follows from. Ask a stack question even when the summary seems to answer it: the ruling is the owner's, and the stack stage cites the ruling, not the summary. A stack question is never an open thread: "not in the first version" is a ruling of no.
 

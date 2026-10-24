@@ -1,6 +1,6 @@
 # Stack questions
 
-The concept interview (Step 3) asks every question on this page, as written, one per turn, each with a recommended answer taken from the brainstorm summary's Chosen shape and Key scenarios. The owner's answer becomes a numbered ruling in `docs/CONCEPT.md`. The questions in the second table are the ones in `CATEGORIES` (`bin/lib/stack.mjs`), word for word; a test pins them, so a changed question is a change to `CATEGORIES` first.
+The concept interview (Step 3) asks every question on this page in the owner's language, as a faithful translation that adds nothing and drops nothing, one per turn, each with a recommended answer taken from the brainstorm summary's Chosen shape and Key scenarios. The owner's answer becomes a numbered ruling in `docs/CONCEPT.md`, which records the English question exactly as written on this page. The questions in the second table are the ones in `CATEGORIES` (`bin/lib/stack.mjs`), word for word; a test pins them, so a changed question is a change to `CATEGORIES` first.
 
 The table order is not the asking order: ask the platform first, then let the grilling frontier decide.
 
