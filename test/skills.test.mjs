@@ -9,7 +9,7 @@ import { CATEGORIES } from '../bin/lib/stack.mjs';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
-const SKILLS = ['brainstorm', 'concept', 'stack', 'grilling', 'blueprint', 'specs', 'tickets'];
+const SKILLS = ['brainstorm', 'concept', 'stack', 'design', 'grilling', 'blueprint', 'specs', 'tickets'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -51,7 +51,7 @@ test('every skill talks in the language setting, which the plugin declares', () 
 
 test('every gate page is in the language setting and names the English document approved', () => {
   const pages = SKILLS.filter((name) => read(`skills/${name}/SKILL.md`).includes('Build the gate page'));
-  for (const name of ['stack', 'blueprint', 'tickets']) assert.ok(pages.includes(name), `${name} builds a gate page`);
+  for (const name of ['stack', 'design', 'blueprint', 'tickets']) assert.ok(pages.includes(name), `${name} builds a gate page`);
   for (const name of pages) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes('The page is written entirely in ${user_config.language}'), `${name}: page language`);
@@ -62,7 +62,7 @@ test('every gate page is in the language setting and names the English document 
 });
 
 test('each gated stage skill hands off to its gate and never stamps', () => {
-  for (const name of ['brainstorm', 'concept', 'stack', 'blueprint', 'tickets']) {
+  for (const name of ['brainstorm', 'concept', 'stack', 'design', 'blueprint', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
     for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
@@ -89,7 +89,7 @@ test('the concept asks every product-dependent stack question as CATEGORIES word
   const expected = [...groups].map(([q, cats]) => `| ${cats.map((c) => `\`${c}\``).join(', ')} | ${q} |`);
   const rows = ref.slice(ref.indexOf('## Stack categories')).split('\n').filter((l) => l.startsWith('| `'));
   assert.deepEqual(rows, expected);
-  for (const fact of ['platform', 'users', 'offline', 'budget']) assert.ok(ref.includes(`| ${fact} | `), `${fact} is asked`);
+  for (const fact of ['platform', 'users', 'offline', 'budget', 'language']) assert.ok(ref.includes(`| ${fact} | `), `${fact} is asked`);
   for (const c of CATEGORIES) if (c.always) assert.ok(!ref.includes(`| \`${c.category}\``), `${c.category} is never asked`);
   assert.ok(ref.includes('`ci-cd`, `error-tracking` and `analytics` are always needed'));
 });
@@ -100,7 +100,7 @@ test('the concept reads the approved brainstorm summary, asks the stack question
   assert.ok(skill.includes('docs/brainstorm/summary.md'));
   assert.ok(skill.includes('Competitor takeaways'));
   assert.ok(skill.includes('references/stack-questions.md'));
-  for (const w of ['the platform', 'the number of users', 'offline use', 'the budget']) assert.ok(skill.includes(w), `${w} is in the frontier`);
+  for (const w of ['the platform', 'the number of users', 'offline use', 'the budget', 'the language users read on screen']) assert.ok(skill.includes(w), `${w} is in the frontier`);
   assert.ok(skill.includes('[stack: '));
   const template = read('skills/concept/references/concept-template.md');
   assert.doesNotMatch(template, /3–5 rows|web search/);
@@ -149,7 +149,7 @@ test('the attack prints both sides verbatim with a rebuttal round, competitors c
 });
 
 test('each skill names the model the owner chose for it, and the README records the same', () => {
-  const MODELS = { brainstorm: 'opus', concept: 'opus', stack: 'opus', grilling: 'inherit', blueprint: 'fable', specs: 'opus', tickets: 'sonnet' };
+  const MODELS = { brainstorm: 'opus', concept: 'opus', stack: 'opus', design: 'opus', grilling: 'inherit', blueprint: 'fable', specs: 'opus', tickets: 'sonnet' };
   assert.deepEqual(Object.keys(MODELS).sort(), [...SKILLS].sort());
   const readme = read('README.md');
   for (const name of SKILLS) {
@@ -171,13 +171,13 @@ test('every subagent dispatch names its model, and the stack stage never asks th
       dispatches++;
     }
   }
-  assert.equal(dispatches, 4, 'the brainstorm attack, the stack pair, the ledger challenger and the grilling lookup');
+  assert.equal(dispatches, 5, 'the brainstorm attack, the stack pair, the ledger challenger, the design directions and the grilling lookup');
   const { body } = splitFront(read('skills/stack/SKILL.md'));
   assert.ok(body.includes('Never ask the owner which model a subagent runs on'));
 });
 
 test('each later stage skill checks its gates before anything else', () => {
-  for (const name of ['concept', 'stack', 'blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'stack', 'design', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const lines = body.split('\n');
     const first = lines.findIndex((l) => l.startsWith('## Step'));
@@ -189,7 +189,7 @@ test('each later stage skill checks its gates before anything else', () => {
 });
 
 test('after a refusal, each later stage waits for a new invocation of itself', () => {
-  for (const name of ['concept', 'stack', 'blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'stack', 'design', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const rule = `After a refusal, wait until the owner invokes \`/idea-to-issues:${name}\` again.`;
     const step1 = body.slice(body.indexOf('## Step 1'), body.indexOf('## Step 2'));
@@ -387,4 +387,36 @@ test("the stack ADR template matches the blueprint's", () => {
   assert.deepEqual(headings(stack), headings(blueprint));
   assert.equal(stack[2], 'Status: Accepted');
   assert.equal(blueprint[2], 'Status: Accepted');
+});
+
+test('the design skill grills the inventory, keeps the directions, shoots the PNGs and never commits', () => {
+  const { body } = splitFront(read('skills/design/SKILL.md'));
+  for (const needle of [
+    'i2i.mjs design shots',
+    'data-direction',
+    'never draw a direction yourself',
+    'one question at a time',
+    'Ruling N',
+    'Change list',
+    '/idea-to-issues:concept',
+    'No screens: ui-library excluded by Ruling',
+    'Which language or languages will the product\'s users read on screen?',
+    'byte for byte',
+    "git status --porcelain -- docs/design ':(exclude)docs/design/index.md'",
+    'Never ask the owner which model a subagent runs on',
+    'never commit',
+  ]) assert.ok(body.includes(needle), needle);
+  const at = (h) => body.indexOf(h);
+  assert.ok(at('## Step 5: Directions') >= 0 && at('## Step 5: Directions') < at('## Step 6: Build'));
+  assert.ok(at('## Step 8: Screenshots') >= 0 && at('## Step 8: Screenshots') < at('## Step 9: Present the design gate'));
+});
+
+test('the design index template has its sections in order and no front matter', () => {
+  const lines = read('skills/design/references/index-template.md').split('\n');
+  assert.notEqual(lines[0], '---');
+  assert.ok(lines[0].startsWith('# Design'));
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Inventory', 'States', 'Flows', 'Directions', 'Change list', 'Fidelity', 'Screenshots']);
+  assert.ok(lines.includes('| Screen | Id | Basis | Purpose |'));
+  assert.ok(lines.some((l) => l.includes('Ruling N')));
 });

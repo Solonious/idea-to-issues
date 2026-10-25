@@ -12,6 +12,7 @@ The table order is not the asking order: ask the platform first, then let the gr
 | users | How many people will use it in its first year: one person, a household or a small team, hundreds, or the public? |
 | offline | Must the product work without a network connection, and if so, what must work offline? |
 | budget | How much may the first version cost a month in hosting and third-party services? |
+| language | Which language or languages will the product's users read on screen? |
 
 ## Stack categories
 

@@ -68,31 +68,33 @@ DOC
 }
 
 concept_approved() {
-  write docs/CONCEPT.md <<'DOC'
-# Concept
-
-## Problem
-
-People forget to water their plants.
-
-## Who it is for
-
-Home growers with a few pots.
-
-## Competitors
-
-Paper calendars and generic reminder apps.
-
-## Rulings
-
-- A reminder is per plant.
-
-## Open threads
-
-None.
-DOC
+  cp "$ROOT/test/fixtures/stack/valid/CONCEPT.md" docs/CONCEPT.md
   commit concept
   approve concept
+}
+
+stack_approved() {
+  cp "$ROOT/test/fixtures/stack/valid/stack.md" docs/stack.md
+  commit stack
+  approve stack
+}
+
+design_approved() {
+  write docs/design/index.md <<'DOC'
+# Design: Plant reminders
+
+## Inventory
+
+| Screen | Id | Basis | Purpose |
+|---|---|---|---|
+| Home | `home` | Ruling 6 | the plant list |
+DOC
+  write docs/design/prototype.html <<'DOC'
+<!doctype html>
+<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>
+DOC
+  commit design
+  approve design
 }
 
 blueprint_approved() {

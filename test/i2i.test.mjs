@@ -11,11 +11,11 @@ function i2i(...args) {
   return spawnSync(process.execPath, [BIN, ...args], { encoding: 'utf8' });
 }
 
-test('--help lists the five modes and exits 0', () => {
+test('--help lists the six modes and exits 0', () => {
   for (const flag of ['--help', '-h', 'help']) {
     const { status, stdout } = i2i(flag);
     assert.equal(status, 0, flag);
-    for (const mode of ['check', 'file', 'verify', 'gate', 'stack']) {
+    for (const mode of ['check', 'file', 'verify', 'gate', 'stack', 'design']) {
       assert.match(stdout, new RegExp(`^  ${mode} `, 'm'), `${flag} lists ${mode}`);
     }
   }

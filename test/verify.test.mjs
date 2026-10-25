@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const STUB = fileURLToPath(new URL('./stub-gh', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url));
+const DESIGN_INDEX = '# Design: Plants\n\n## Inventory\n\n| Screen | Id | Basis | Purpose |\n|---|---|---|---|\n| Home | `home` | Ruling 6 | the plant list |\n';
+const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>\n';
 // A real `gh issue list --state all --json number,title,parent,blockedBy,projectItems` of this repository,
 // so the stub cannot drift from what gh returns. Its [CORE] issues are the graph of fixtures/core.
 const CAPTURE = join(FIXTURES, 'gh/issue-list.json');
@@ -47,7 +49,7 @@ function stamp(repo, gate) {
   commit(repo, `approve ${gate}`);
 }
 
-// A repository with gates 0, 1 and 2 approved, the given spec fixtures committed and, unless `approve` is false, gate 3 approved and pushed.
+// A repository with every gate up to 2 approved, the given spec fixtures committed and, unless `approve` is false, gate 3 approved and pushed.
 function approvedChain(t, { specs = ['core/core.md'], approve = true } = {}) {
   const tmp = mkdtempSync(join(tmpdir(), 'i2i-verify-'));
   t.after(() => rmSync(tmp, { recursive: true, force: true }));
@@ -61,9 +63,16 @@ function approvedChain(t, { specs = ['core/core.md'], approve = true } = {}) {
   write(repo, 'docs/brainstorm/summary.md', '# Brainstorm summary: Plants\n\nA reminder per plant.\n');
   commit(repo, 'brainstorm');
   stamp(repo, 'brainstorm');
-  write(repo, 'docs/CONCEPT.md', '# Concept\n\nA tool for people who forget their plants.\n');
+  write(repo, 'docs/CONCEPT.md', readFileSync(join(FIXTURES, 'stack/valid/CONCEPT.md'), 'utf8'));
   commit(repo, 'concept');
   stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', readFileSync(join(FIXTURES, 'stack/valid/stack.md'), 'utf8'));
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(repo, 'design');
+  stamp(repo, 'design');
   write(repo, 'docs/blueprint.md', '# Blueprint\n\nOne web app and one API.\n');
   commit(repo, 'blueprint');
   stamp(repo, 'blueprint');

@@ -5,12 +5,15 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { STAGES, requireStage } from '../bin/lib/gate.mjs';
 
 const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const APPROVE = fileURLToPath(new URL('../commands/approve.md', import.meta.url));
-const CONCEPT = '# Concept\n\nA tool for people who forget their plants.\n';
+const fixture = (name) => readFileSync(fileURLToPath(new URL(`./fixtures/stack/valid/${name}`, import.meta.url)), 'utf8');
+const CONCEPT = fixture('CONCEPT.md');
+const STACK = fixture('stack.md');
 const BLUEPRINT_BODY = '# Blueprint\n\nOne web app and one API.\n';
+const DESIGN_INDEX = '# Design: Plants\n\n## Inventory\n\n| Screen | Id | Basis | Purpose |\n|---|---|---|---|\n| Home | `home` | Ruling 6 | the plant list |\n';
+const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>\n';
 const SUMMARY = '# Brainstorm summary: Plants\n\nA reminder per plant.\n';
 const SHA = /^[0-9a-f]{40}$/;
 
@@ -71,7 +74,7 @@ function setup(t, { remote = true } = {}) {
   return { tmp, repo, origin };
 }
 
-// Gates 0, 1 and 2 approved, committed and pushed.
+// Every gate up to 2 approved, committed and pushed.
 function approvedChain(t, opts) {
   const ctx = setup(t, opts);
   write(ctx.repo, 'docs/brainstorm/summary.md', SUMMARY);
@@ -80,6 +83,13 @@ function approvedChain(t, opts) {
   write(ctx.repo, 'docs/CONCEPT.md', CONCEPT);
   commit(ctx.repo, 'concept');
   stamp(ctx.repo, 'concept');
+  write(ctx.repo, 'docs/stack.md', STACK);
+  commit(ctx.repo, 'stack');
+  stamp(ctx.repo, 'stack');
+  write(ctx.repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(ctx.repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(ctx.repo, 'design');
+  stamp(ctx.repo, 'design');
   write(ctx.repo, 'docs/blueprint.md', BLUEPRINT_BODY);
   commit(ctx.repo, 'blueprint');
   stamp(ctx.repo, 'blueprint');
@@ -93,22 +103,46 @@ test('require fails while the upstream document is missing or unapproved, and pa
   commit(repo, 'brainstorm');
   stamp(repo, 'brainstorm');
   git(repo, 'push', '--quiet');
-  let r = i2i(repo, 'gate', 'require', 'blueprint');
-  assert.equal(r.status, 1);
-  assert.match(r.stderr, /docs\/CONCEPT\.md does not exist/);
-
   write(repo, 'docs/CONCEPT.md', CONCEPT);
   commit(repo, 'concept');
   git(repo, 'push', '--quiet');
+  stamp(repo, 'concept');
+  git(repo, 'push', '--quiet');
+  let r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md does not exist: the stack stage has not run/);
+
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md is not approved: review it, then run \/idea-to-issues:approve stack/);
+
+  stamp(repo, 'stack');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^gate: design may start \(checked brainstorm, concept, stack\)$/m);
+
   r = i2i(repo, 'gate', 'require', 'blueprint');
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /docs\/CONCEPT\.md is not approved: review it, then run \/idea-to-issues:approve concept/);
+  assert.match(r.stderr, /docs\/design\/index\.md does not exist: the design stage has not run/);
 
-  stamp(repo, 'concept');
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(repo, 'design');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design\/index\.md is not approved: review it, then run \/idea-to-issues:approve design/);
+
+  stamp(repo, 'design');
   git(repo, 'push', '--quiet');
   r = i2i(repo, 'gate', 'require', 'blueprint');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: blueprint may start \(checked brainstorm, concept\)$/m);
+  assert.match(r.stdout, /^gate: blueprint may start \(checked brainstorm, concept, stack, design\)$/m);
+  assert.match(read(repo, 'docs/design/index.md'), /^based-on: docs\/design@[0-9a-f]{40}$/m);
 });
 
 test('require concept fails while the brainstorm summary is missing, unapproved or edited after its approval, and passes once it is approved', (t) => {
@@ -159,16 +193,16 @@ test('require stack fails while the concept is missing, unapproved or edited aft
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /^gate: stack may start \(checked brainstorm, concept\)$/m);
 
-  write(repo, 'docs/stack.md', '# Stack\n\nRows.\n');
+  write(repo, 'docs/stack.md', STACK);
   commit(repo, 'stack');
   stamp(repo, 'stack');
   const doc = read(repo, 'docs/stack.md');
   assert.match(doc, /^---\napproved: \d{4}-\d{2}-\d{2}\ndigest: sha256:[0-9a-f]{64}\nbased-on: docs\/CONCEPT\.md@[0-9a-f]{40}\n---\n/);
-  assert.ok(doc.endsWith('# Stack\n\nRows.\n'), 'the body is unchanged');
+  assert.ok(doc.endsWith(STACK), 'the body is unchanged');
   git(repo, 'push', '--quiet');
-  r = i2i(repo, 'gate', 'require', 'blueprint');
+  r = i2i(repo, 'gate', 'require', 'prototype');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: blueprint may start \(checked brainstorm, concept\)$/m);
+  assert.match(r.stdout, /^gate: prototype may start \(checked brainstorm, concept, stack\)$/m);
 
   write(repo, 'docs/CONCEPT.md', read(repo, 'docs/CONCEPT.md') + '\nAlso a mobile app.\n');
   r = i2i(repo, 'gate', 'require', 'stack');
@@ -206,9 +240,9 @@ test('require fails when the upstream is edited after the downstream approval, a
 
   const r = i2i(repo, 'gate', 'require', 'specs');
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /docs\/CONCEPT\.md changed after docs\/blueprint\.md was approved \(based on [0-9a-f]{7}\)/);
+  assert.match(r.stderr, /docs\/CONCEPT\.md changed after docs\/stack\.md was approved \(based on [0-9a-f]{7}\)/);
   assert.match(r.stderr, /docs\/CONCEPT\.md \| \d+/);
-  assert.match(r.stderr, /run \/idea-to-issues:approve blueprint again/);
+  assert.match(r.stderr, /run \/idea-to-issues:approve stack again/);
   assert.doesNotMatch(r.stderr, /CONCEPT\.md was edited after its approval/);
 });
 
@@ -232,7 +266,7 @@ test('with no upstream branch, require skips the remote half and says so', (t) =
   const r = i2i(repo, 'gate', 'require', 'specs');
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stderr, /note: no upstream branch is configured, so edits on the remote were not checked/);
-  assert.match(r.stdout, /^gate: specs may start \(checked brainstorm, concept, blueprint\)$/m);
+  assert.match(r.stdout, /^gate: specs may start \(checked brainstorm, concept, stack, design, blueprint\)$/m);
 });
 
 test('a failing fetch fails the gate', (t) => {
@@ -262,6 +296,15 @@ test('stamp writes a based-on sha that git rev-parse confirms, and keeps the res
   assert.ok(concept.endsWith(`\n---\n${CONCEPT}`), 'a document without front matter keeps its text byte for byte');
   assert.match(concept, /^based-on: docs\/brainstorm\/summary\.md@[0-9a-f]{40}$/m, 'the concept pins the brainstorm summary');
   commit(repo, 'approve concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  assert.equal(i2i(repo, 'gate', 'stamp', 'stack').status, 0);
+  commit(repo, 'approve stack');
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(repo, 'design');
+  assert.equal(i2i(repo, 'gate', 'stamp', 'design').status, 0);
+  commit(repo, 'approve design');
 
   const original = `---\ntitle: Blueprint\nowner: Ann\n---\n${BLUEPRINT_BODY}`;
   write(repo, 'docs/blueprint.md', original);
@@ -276,7 +319,7 @@ test('stamp writes a based-on sha that git rev-parse confirms, and keeps the res
   assert.match(field(front, 'approved'), /^\d{4}-\d{2}-\d{2}$/);
   assert.match(field(front, 'digest'), /^sha256:[0-9a-f]{64}$/);
   const [path, sha] = field(front, 'based-on').split('@');
-  assert.equal(path, 'docs/CONCEPT.md');
+  assert.equal(path, 'docs/design/index.md');
   assert.match(sha, SHA);
   assert.equal(sha, head);
   assert.equal(git(repo, 'rev-parse', '--verify', `${sha}^{commit}`), sha);
@@ -288,7 +331,7 @@ test('stamp writes a based-on sha that git rev-parse confirms, and keeps the res
   const again = splitFront(read(repo, 'docs/blueprint.md'));
   assert.equal(again.body, BLUEPRINT_BODY);
   for (const key of ['approved', 'digest', 'based-on']) assert.equal(again.front.filter((l) => l.startsWith(`${key}:`)).length, 1, key);
-  assert.equal(field(again.front, 'based-on'), `docs/CONCEPT.md@${git(repo, 'rev-parse', 'HEAD')}`);
+  assert.equal(field(again.front, 'based-on'), `docs/design/index.md@${git(repo, 'rev-parse', 'HEAD')}`);
 });
 
 test('stamp refuses an upstream with uncommitted changes', (t) => {
@@ -297,16 +340,39 @@ test('stamp refuses an upstream with uncommitted changes', (t) => {
   commit(repo, 'brainstorm');
   stamp(repo, 'brainstorm');
   write(repo, 'docs/CONCEPT.md', CONCEPT);
-  write(repo, 'docs/blueprint.md', BLUEPRINT_BODY);
+  write(repo, 'docs/stack.md', STACK);
   commit(repo, 'docs');
   assert.equal(i2i(repo, 'gate', 'stamp', 'concept').status, 0);
   git(repo, 'push', '--quiet');
 
   // The concept stamp is not committed, so HEAD holds a concept without its approval.
-  const r = i2i(repo, 'gate', 'stamp', 'blueprint');
+  const r = i2i(repo, 'gate', 'stamp', 'stack');
   assert.equal(r.status, 1);
   assert.match(r.stderr, /docs\/CONCEPT\.md has uncommitted changes: commit them first/);
-  assert.equal(read(repo, 'docs/blueprint.md'), BLUEPRINT_BODY);
+  assert.equal(read(repo, 'docs/stack.md'), STACK);
+});
+
+test('stamp design refuses a prototype directory with uncommitted changes', (t) => {
+  const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(repo, 'design');
+  git(repo, 'push', '--quiet');
+  write(repo, 'docs/design/prototype.html', `${PROTOTYPE}<!-- v2 -->\n`);
+
+  const r = i2i(repo, 'gate', 'stamp', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design has uncommitted changes: commit them first/);
+  assert.equal(read(repo, 'docs/design/index.md'), DESIGN_INDEX);
 });
 
 test('stamp refuses when the gates before it do not pass', (t) => {
@@ -344,7 +410,7 @@ test('gate 3 pins the specs without its own document, and require file checks it
 
   let r = i2i(repo, 'gate', 'require', 'file');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^gate: file may start \(checked brainstorm, concept, blueprint, tickets\)$/m);
+  assert.match(r.stdout, /^gate: file may start \(checked brainstorm, concept, stack, design, blueprint, tickets\)$/m);
 
   write(repo, 'docs/specs/billing.md', '# [BILL] Billing\n');
   r = i2i(repo, 'gate', 'require', 'file');
@@ -358,33 +424,79 @@ test('gate 3 pins the specs without its own document, and require file checks it
   assert.match(r.stderr, /docs\/specs\/billing\.md \| \d+/);
 });
 
-test('require refuses a stage after stack while docs/stack.md has findings, and stamp stack does not run the check', (t) => {
+test('require design refuses while docs/stack.md has findings, and stamp stack does not run the check', (t) => {
   const { repo } = setup(t, { remote: false });
-  const fixture = (name) => readFileSync(fileURLToPath(new URL(`./fixtures/stack/valid/${name}`, import.meta.url)), 'utf8');
   write(repo, 'docs/brainstorm/summary.md', SUMMARY);
   commit(repo, 'brainstorm');
   stamp(repo, 'brainstorm');
-  write(repo, 'docs/CONCEPT.md', fixture('CONCEPT.md'));
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
   commit(repo, 'concept');
   stamp(repo, 'concept');
-  write(repo, 'docs/stack.md', fixture('stack.md').split('\n').filter((l) => !l.startsWith('| `email` |')).join('\n'));
+  write(repo, 'docs/stack.md', STACK.split('\n').filter((l) => !l.startsWith('| `email` |')).join('\n'));
   commit(repo, 'stack');
   stamp(repo, 'stack');
 
-  assert.equal(i2i(repo, 'gate', 'require', 'blueprint').status, 0);
+  let r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /^i2i gate: docs\/stack\.md:\d+: \[email\] missing-category: /m);
+  assert.match(r.stderr, /revise it with \/idea-to-issues:stack/);
 
-  // No stage builds on stack until #42 adds design; a probe stage proves the wiring in-process.
-  STAGES.design = { doc: 'docs/design/index.md', gate: true, upstream: 'stack' };
-  t.after(() => { delete STAGES.design; });
-  const refused = requireStage(repo, 'design');
-  assert.deepEqual(refused.gates, ['brainstorm', 'concept', 'stack']);
-  assert.ok(refused.problems.some((p) => /^docs\/stack\.md:\d+: \[email\] missing-category: /.test(p)), refused.problems.join('\n'));
-  assert.ok(refused.problems.some((p) => p.includes('revise it with /idea-to-issues:stack')));
-
-  write(repo, 'docs/stack.md', fixture('stack.md'));
+  write(repo, 'docs/stack.md', STACK);
   commit(repo, 'stack fixed');
   stamp(repo, 'stack');
-  assert.deepEqual(requireStage(repo, 'design').problems, []);
+  r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /checked brainstorm, concept, stack\)$/m);
+});
+
+test('require design fails while the stack is unapproved or edited after its approval', (t) => {
+  const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  git(repo, 'push', '--quiet');
+  let r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md is not approved/);
+
+  stamp(repo, 'stack');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 0, r.stderr);
+
+  write(repo, 'docs/stack.md', read(repo, 'docs/stack.md') + '\nAlso.\n');
+  r = i2i(repo, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md was edited after its approval on \d{4}-\d{2}-\d{2}/);
+});
+
+test('an edit to any file under docs/design after the design approval fails require blueprint', (t) => {
+  const { repo } = approvedChain(t);
+  assert.equal(i2i(repo, 'gate', 'require', 'blueprint').status, 0);
+
+  write(repo, 'docs/design/prototype.html', `${PROTOTYPE}<!-- v2 -->\n`);
+  let r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design changed after docs\/design\/index\.md was approved \(based on [0-9a-f]{7}\)/);
+  assert.match(r.stderr, /docs\/design\/prototype\.html \| \d+/);
+  assert.match(r.stderr, /run \/idea-to-issues:approve design again/);
+  git(repo, 'checkout', '--', '.');
+
+  write(repo, 'docs/design/png/home-mobile.png', 'png');
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design\/png\/home-mobile\.png \(untracked\)/);
+  rmSync(join(repo, 'docs/design/png'), { recursive: true });
+
+  write(repo, 'docs/design/index.md', `${read(repo, 'docs/design/index.md')}\nAlso a settings screen.\n`);
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design\/index\.md was edited after its approval/);
 });
 
 test('require fails on front matter that is never closed', (t) => {
@@ -404,7 +516,7 @@ test('require brainstorm has nothing to check', (t) => {
 
 test('gate usage errors exit 2', (t) => {
   const { tmp, repo } = setup(t);
-  for (const args of [[], ['stamp'], ['require'], ['stamp', 'nope'], ['stamp', 'specs'], ['stamp', 'docs/other.md'], ['require', 'nope'], ['require', 'specs', 'extra'], ['approve', 'concept']]) {
+  for (const args of [[], ['stamp'], ['require'], ['stamp', 'nope'], ['stamp', 'specs'], ['stamp', 'prototype'], ['stamp', 'docs/design'], ['stamp', 'docs/other.md'], ['require', 'nope'], ['require', 'specs', 'extra'], ['approve', 'concept']]) {
     assert.equal(i2i(repo, 'gate', ...args).status, 2, args.join(' '));
   }
   const outside = join(tmp, 'outside');
@@ -418,6 +530,7 @@ test('the approve command is user-only', () => {
   const text = readFileSync(APPROVE, 'utf8');
   const { front } = splitFront(text);
   assert.ok(front.includes('disable-model-invocation: true'), 'disable-model-invocation: true is in the front matter');
+  assert.match(text, /^argument-hint: brainstorm \| concept \| stack \| design \| blueprint \| tickets$/m);
   assert.match(text, /i2i\.mjs gate stamp \$ARGUMENTS/);
 });
 

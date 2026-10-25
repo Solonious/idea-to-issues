@@ -69,7 +69,7 @@ The page is written entirely in ${user_config.language}: headings, intro, diagra
 
 ## Step 7: Hand off to gate 2
 
-Show the owner the document path, the ADR paths and a short summary, then ask them to run `/idea-to-issues:approve blueprint`. If `git status --porcelain -- docs/CONCEPT.md` prints anything, say that the approval will be refused until `docs/CONCEPT.md` is committed. Stop there.
+Show the owner the document path, the ADR paths and a short summary, then ask them to run `/idea-to-issues:approve blueprint`. If `git status --porcelain -- docs/design/index.md` prints anything, say that the approval will be refused until `docs/design/index.md` is committed. Stop there.
 
 ## Never
 

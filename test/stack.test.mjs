@@ -114,7 +114,7 @@ test('stack check passes the valid fixture', () => {
   const { status, stdout, stderr } = i2i('stack', 'check', join(FIXTURES, 'valid'));
   assert.equal(status, 0, stderr);
   assert.equal(stderr, '');
-  assert.match(stdout, /^stack check: 7 rows, 12 ledger lines, 15 rulings mapped, 0 findings$/m);
+  assert.match(stdout, /^stack check: 7 rows, 12 ledger lines, 16 rulings mapped, 0 findings$/m);
 });
 
 const RULES = [

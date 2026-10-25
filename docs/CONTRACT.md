@@ -480,3 +480,73 @@ Finding: none
 ````
 
 `test/stack.test.mjs` extracts these fences and runs `stack check` on them, so the example is the contract's executable form.
+
+# Design document contract
+
+The design stage writes a folder, `docs/design/`, and pins all of it at once. `docs/design/index.md` is the gate document; `gate stamp design` stamps it, and the `based-on` it writes pins `docs/design` without `index.md`, so an edit to any other file there fails the next gate until the design is approved again. There is no checker for this contract yet; the checks for ids both ways, three states per screen and transition targets come with the design check.
+
+## Layout
+
+- `docs/design/prototype.html`: the only prototype, a single self-contained file.
+- `docs/design/directions/<slug>.html`: one file per direction drawn before the prototype, the root element marked `data-direction="<slug>"`, never a `data-screen`. Rejected directions stay.
+- `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-id>-desktop.png`: one pair per screen, in its filled state, at 390×844 and 1440×900, cut at the viewport height (a full-page capture is out of scope). `i2i design shots [<dir>]` writes them.
+- `docs/design/index.md`: the gate document.
+
+## Attributes
+
+| Attribute | On | Meaning |
+|---|---|---|
+| `data-screen="<screen-id>"` | the element that is one screen | the id matches `[a-z][a-z0-9-]*` and is unique in the file |
+| `data-state="empty\|filled\|error"` | the three state containers inside each screen | each state exactly once per screen |
+| `data-to="<screen-id>"` or `"<screen-id>/<state>"` | a clickable element | the transition it makes |
+
+## Addressing
+
+`#<screen-id>` shows that screen in its `filled` state, `#<screen-id>/<state>` the named state, and no hash shows the first `data-screen` in document order, filled. A plain inline script applies the hash on `load` and on `hashchange`; a click on a `data-to` element sets `location.hash`. No CSS transition or animation runs on the initial render, because `i2i design shots` captures at the load event.
+
+```html
+<section data-screen="home">
+  <div data-state="filled">…</div>
+  <div data-state="empty">…</div>
+  <div data-state="error">…</div>
+  <a data-to="plant">Open a plant</a>
+</section>
+```
+
+## Widths and external loads
+
+The prototype is one responsive document: every screen renders at 390 and at 1440 px. Everything is inline (markup, CSS, JavaScript, SVG), with two exceptions: at most one pinned `<script>` from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or cdn.tailwindcss.com, and no stylesheet other than Google Fonts. Nothing may need the claude.ai Artifact runtime, so the committed file opens in a plain browser. A CDN script may not have run when the screenshot is taken, so inline CSS is preferred.
+
+## The chosen UI library
+
+"On the chosen UI library" means the `Chosen:` line of the `ui-library` row of `docs/stack.md`, reproduced in plain HTML as its design tokens, class names and component shapes. It is an approximation; `## Fidelity` in `index.md` lists what is faithful and what is approximated.
+
+## UI copy
+
+The text on screen is in the product's end-user language, the one a ruling of `docs/CONCEPT.md` settles. Everything else in the folder is English.
+
+## The gate document
+
+`docs/design/index.md` has these sections, in this order, and a new document carries no front matter:
+
+| Section | Content |
+|---|---|
+| `## Inventory` | `\| Screen \| Id \| Basis \| Purpose \|`, one row per screen; `Basis` is `Ruling N` |
+| `## States` | `\| Screen \| empty \| filled \| error \|` |
+| `## Flows` | `\| From \| To \| Trigger \|`, one row per `data-to` |
+| `## Directions` | ``Chosen: `<slug>` — <why>`` and one ``Rejected: `<slug>` — <why>`` per other direction, or `Owner prototype: no directions` |
+| `## Change list` | `\| # \| Change \| From \| Ruling \|`: every change from the owner's prototype and every change asked for in review; `none` when empty |
+| `## Fidelity` | what is faithful to the chosen UI library and what is approximated |
+| `## Screenshots` | `\| Screen \| Mobile \| Desktop \|` with the `png/<screen-id>-mobile.png` and `-desktop.png` paths |
+
+The prototype wins on look and interaction; `index.md` wins on scope, which screens and states exist.
+
+## The no-UI form
+
+When `ui-library` is on the exclusion ledger of `docs/stack.md`, `index.md` is `# Design: <product>` and one line, `No screens: ui-library excluded by Ruling N`, with N from the ledger line. There is no HTML and there are no PNGs. The same gate applies.
+
+```markdown
+# Design: Plant reminders
+
+No screens: ui-library excluded by Ruling 6
+```

@@ -8,6 +8,7 @@ import { renderDefaults, parseRulings, checkStack } from './lib/stack.mjs';
 import { planFile, describe, perform } from './lib/file.mjs';
 import { readIssues } from './lib/github.mjs';
 import { verifyIssues, formatDefect, waitSettled } from './lib/verify.mjs';
+import { shots } from './lib/design.mjs';
 
 const MODES = {
   check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3' },
@@ -15,6 +16,7 @@ const MODES = {
   verify: { usage: 'verify [--wait] [--interval <s>] [--timeout <s>]', summary: 'compare the approved spec blocks with what GitHub holds' },
   gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter' },
   stack: { usage: 'stack defaults [<category>…] | check [<dir>]', summary: 'print the research behind each stack category, or check docs/stack.md against docs/CONCEPT.md' },
+  design: { usage: 'design shots [<dir>]', summary: 'screenshot every data-screen of docs/design/prototype.html at mobile and desktop widths' },
 };
 
 // Seconds between two --wait polls, and the most --wait spends before it gives up.
@@ -112,6 +114,21 @@ function runStackCheck(args, usage) {
   }
   process.stdout.write(`stack check: ${rows} rows, ${ledger} ledger lines, ${mapped} rulings mapped, 0 findings\n`);
   return 0;
+}
+
+function runDesign(args) {
+  const [action, dir = 'docs/design', ...extra] = args;
+  if (action !== 'shots' || extra.length > 0 || dir.startsWith('--')) {
+    process.stderr.write('Usage: i2i design shots [<dir>]\n');
+    return 2;
+  }
+  const { code, files, screens, problems } = shots(dir);
+  if (code === 0) {
+    process.stdout.write(files.map((f) => `  ${f}\n`).join('') + `design shots: ${screens} screens, ${files.length} files\n`);
+    return 0;
+  }
+  process.stderr.write(problems.map((p) => `i2i design shots: ${p}\n`).join(''));
+  return code;
 }
 
 function runGate(args) {
@@ -314,6 +331,7 @@ function main(argv) {
   if (mode === 'gate') return runGate(argv.slice(1));
   if (mode === 'file') return runFile(argv.slice(1));
   if (mode === 'stack') return runStack(argv.slice(1));
+  if (mode === 'design') return runDesign(argv.slice(1));
   return runVerify(argv.slice(1));
 }
 
