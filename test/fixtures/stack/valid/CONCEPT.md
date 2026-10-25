@@ -29,6 +29,7 @@ The competitors activity was skipped.
 13. Will users pay money inside the product: a subscription, a one-off purchase or usage charges? → No — it is free [stack: payments]
 14. Does any feature need to generate, summarise, classify or converse in natural language rather than follow fixed rules? → No — fixed watering intervals [stack: ai-api]
 15. Should each plant show the shop it came from on a map? → Yes — the household buys from three shops
+16. Which language or languages will the product's users read on screen? → English — the household reads English
 
 ## Open threads
 

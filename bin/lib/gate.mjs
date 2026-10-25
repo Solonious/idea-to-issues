@@ -8,12 +8,14 @@ import { formatFinding } from './spec.mjs';
 import { parseRulings, checkStack } from './stack.mjs';
 
 // Every stage in order. A gated stage's document carries the stamp; `file` is not a stage of its own,
-// it names the filing step, which needs gate 3.
+// it names the filing step, which needs gate 3. `prototype`, like `specs`, is the ungated directory a gated stage pins.
 export const STAGES = {
   brainstorm: { doc: 'docs/brainstorm/summary.md', gate: true },
   concept: { doc: 'docs/CONCEPT.md', gate: true, upstream: 'brainstorm' },
   stack: { doc: 'docs/stack.md', gate: true, upstream: 'concept' },
-  blueprint: { doc: 'docs/blueprint.md', gate: true, upstream: 'concept' },
+  prototype: { doc: 'docs/design', upstream: 'stack' },
+  design: { doc: 'docs/design/index.md', gate: true, upstream: 'prototype' },
+  blueprint: { doc: 'docs/blueprint.md', gate: true, upstream: 'design' },
   specs: { doc: 'docs/specs', upstream: 'blueprint' },
   tickets: { doc: 'docs/specs/index.md', gate: true, upstream: 'specs' },
   file: { upstream: 'tickets' },

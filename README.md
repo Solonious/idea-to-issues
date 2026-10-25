@@ -1,22 +1,23 @@
 # idea-to-issues
 
-A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, stack, blueprint, specs, tickets.
+A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, stack, design, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the six stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the seven stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
 
 ## What it does
 
-You bring an idea. The plugin walks it through six stages. Every stage but the brainstorm is one session; the brainstorm runs across as many as you want. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
+You bring an idea. The plugin walks it through seven stages. Every stage but the brainstorm is one session; the brainstorm runs across as many as you want. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
 
 The agent holds the judgement: the concept, the architecture, the specs, and whether an acceptance criterion is measurable. Code holds the structure, the gate stamps and every GitHub write.
 
-## The six stages
+## The seven stages
 
 | Stage | Output | Ends at |
 |---|---|---|
 | brainstorm | `docs/brainstorm/notes.md` (working notes), `docs/brainstorm/summary.md` | gate 0 |
 | concept | `docs/CONCEPT.md` | gate 1 |
 | stack | `docs/stack.md`, `docs/adr/` | the stack gate |
+| design | `docs/design/index.md`, `docs/design/prototype.html`, `docs/design/directions/`, `docs/design/png/` | the design gate |
 | blueprint | `docs/blueprint.md`, `docs/adr/` | gate 2 |
 | specs | `docs/specs/<epic>.md`, with acceptance criteria and `### [KEY-N]` ticket blocks | the mechanical `check` |
 | tickets | `docs/specs/index.md` (epic order), then the Issues | gate 3 |
@@ -27,11 +28,13 @@ Each stage starts by checking that the stage before it is approved and has not c
 
 Stage 0 is `/idea-to-issues:brainstorm`. An idea alone is enough; a prototype link, earlier notes or competitors you already know are welcome, not needed. A working notes file, `docs/brainstorm/notes.md`, grows across as many sessions as you want. It proposes one activity at a time: user scenarios, an attack on the idea by two subagents with opposed positions (both arguments and both rebuttals are shown verbatim, and you rule), alternative product shapes, and a deep competitor analysis. When you say the brainstorm is done, it writes `docs/brainstorm/summary.md` (the chosen shape, the key scenarios, what was rejected and why), shows it translated in the terminal and asks you to run `/idea-to-issues:approve brainstorm`.
 
-Stage 1 is `/idea-to-issues:concept`. It starts with `i2i gate require concept` and stops unless the brainstorm summary is approved and unchanged since. It reads the approved summary, asks once for a prototype link if you have one, and interviews you one question at a time: the problem, the audience, the first version, how it differs from the brainstorm's competitors, and the product facts the stack stage depends on — the platform, the number of users, offline use, the budget, and whether each stack category is needed. It runs no competitor search of its own. Every answer is a numbered ruling in `docs/CONCEPT.md`; a ruling that decides a stack category is tagged with the category names, so the stack stage can cite it. It ends by asking you to run `/idea-to-issues:approve concept`.
+Stage 1 is `/idea-to-issues:concept`. It starts with `i2i gate require concept` and stops unless the brainstorm summary is approved and unchanged since. It reads the approved summary, asks once for a prototype link if you have one, and interviews you one question at a time: the problem, the audience, the first version, how it differs from the brainstorm's competitors, and the product facts the stack stage depends on — the platform, the number of users, offline use, the budget, the language your users read on screen, and whether each stack category is needed. It runs no competitor search of its own. Every answer is a numbered ruling in `docs/CONCEPT.md`; a ruling that decides a stack category is tagged with the category names, so the stack stage can cite it. It ends by asking you to run `/idea-to-issues:approve concept`.
 
 The stack stage is `/idea-to-issues:stack`. It starts with `i2i gate require stack` and stops unless the concept is approved and unchanged since, and stops before writing anything when a stack category has no ruling in the concept. For every category the concept needs, and the three always needed, two subagents argue the owner's default against the best alternative, each with a rebuttal, and the row records both verbatim with the reason one won; a deviation gets an ADR. Categories the concept ruled out go to an exclusion ledger that one more subagent challenges; every concept ruling is mapped. The gate page shows the debates in the conversation language; you approve `docs/stack.md` with `/idea-to-issues:approve stack`. Before the gate page, `i2i stack check docs` refuses a stack that drops a category, excludes an always-needed one, cites a ruling the concept does not have, leaves a row without its driver or leaves a ruling unmapped; the next stage's `i2i gate require` runs the same check. The research behind each default is `i2i stack defaults`.
 
-Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. It runs on Fable, the strongest model (see [Models and cost](#models-and-cost)). The blueprint does not read `docs/stack.md` yet; it still designs on the fixed stack below.
+The design stage is `/idea-to-issues:design`. It starts with `i2i gate require design` and stops unless the concept and the stack are approved and unchanged since, and the stack passes its check. It needs a concept ruling on the language your users read on screen, and stops until you add one. It proposes the first-version screens from the concept's rulings and the brainstorm's scenarios and puts them to you one question at a time; with your prototype it moves it onto the chosen UI library and lists every change for your ruling, without one three subagents draw three directions you choose from. It writes a self-contained `docs/design/prototype.html` (every screen in its empty, filled and error states, at mobile and desktop widths, with an id on every screen, state and transition), `docs/design/index.md` as the gate document, and per-screen PNGs with `i2i design shots`. The prototype is published as a private Artifact byte for byte from `docs/design/prototype.html`, and republished from the file after every change you ask for in review; you commit `docs/design/` once and approve with `/idea-to-issues:approve design`. The format is in `docs/CONTRACT.md`.
+
+Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept, the stack and the design are approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. It runs on Fable, the strongest model (see [Models and cost](#models-and-cost)). The blueprint does not read `docs/stack.md` yet; it still designs on the fixed stack below.
 
 Stage 3 is `/idea-to-issues:specs`. It starts with `i2i gate require specs` and stops unless the blueprint is approved and unchanged since. It writes one `docs/specs/<key>.md` per epic in the blueprint: acceptance criteria in the contract format, a slice table with the epic's walking skeleton first, a coverage table, and the `### [KEY-N]` ticket blocks. It runs `i2i check docs/specs` and fixes every finding before it hands over to the tickets stage; `check` enforces the structure, and whether an acceptance criterion is measurable stays the agent's review. Commit `docs/specs` before the tickets stage, which pins it at gate 3.
 
@@ -46,13 +49,14 @@ Each stage skill names its model in its front matter, and each subagent dispatch
 | brainstorm | Opus | the attack pair and its rebuttals: Opus | about $2.60 |
 | concept | Opus | none | about $2.20 |
 | stack | Opus | per row, the advocate pair and its rebuttals: Opus; the ledger challenger: Opus | about $23 |
+| design | Opus | one per direction, in parallel: Opus | not measured yet; measure on the first real run |
 | blueprint | Fable | none | about $12 |
 | specs | Opus | none | about $4.70 |
 | tickets | Sonnet | none | about $1.70 |
 
 The grilling skill runs on the model of the stage that uses it (`model: inherit`); its fact-lookup subagent runs on Sonnet.
 
-**One full run costs about $46**, at API list prices. Basis: the token counts of the pilot runs on one product, measured on 2026-10-25, priced at the chosen models with the prices of 2026-10-21 per million tokens: Fable $10 input and $50 output, Opus $4 and $20, Sonnet $2 and $10. Most of those runs used a model other than the one chosen now, and a different model spends a different number of tokens, so every figure is an estimate. The stack stage grows with the product: about $1.80 per row, and the pilot product had 13. Prices change; check the current ones before you rely on these.
+**One full run costs about $46**, at API list prices. Basis: the token counts of the pilot runs on one product, measured on 2026-10-25, priced at the chosen models with the prices of 2026-10-21 per million tokens: Fable $10 input and $50 output, Opus $4 and $20, Sonnet $2 and $10. Most of those runs used a model other than the one chosen now, and a different model spends a different number of tokens, so every figure is an estimate. The stack stage grows with the product: about $1.80 per row, and the pilot product had 13. Prices change; check the current ones before you rely on these. The design stage is not in that figure yet.
 
 A skill's `model:` lasts only for the turn that invokes it, so start each stage's session on the stage's model with `claude --model <model>`, for example `claude --model fable` for the blueprint: the flag applies to that session only. Inside a running session, open `/model` and press `s` on the model's row instead. Typing `/model <model>` directly, or pressing Enter in the picker, also saves the model as the default for new sessions, so the next stage would start on it too. If that happened, open `/model`, select the model new sessions should start on, and press Enter.
 
@@ -75,6 +79,7 @@ The plugin also ships the owner's default for every stack category a product may
 | brainstorm | the summary, read translated in the terminal, as the English document |
 | concept | the rulings on the open questions, one question at a time |
 | stack | the argued rows, the exclusion ledger and its challenge, on a rendered page |
+| design | the screen inventory, states and flows on a rendered page, and the prototype itself as a second page |
 | blueprint | the architecture, on a rendered page |
 | tickets | the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub |
 
@@ -99,12 +104,14 @@ based-on: docs/CONCEPT.md@<commit sha>
 | brainstorm | `docs/brainstorm/summary.md` | none |
 | concept | `docs/CONCEPT.md` | `docs/brainstorm/summary.md` |
 | stack | `docs/stack.md` | `docs/CONCEPT.md` |
-| blueprint | `docs/blueprint.md` | `docs/CONCEPT.md` |
+| design | `docs/design/index.md` | `docs/design`, without `index.md` itself |
+| blueprint | `docs/blueprint.md` | `docs/design/index.md` |
 | tickets | `docs/specs/index.md` | `docs/specs`, without `index.md` itself |
 
 - `digest` pins the approved body, so a document edited after its approval no longer counts as approved.
 - The blueprint's digest covers `docs/blueprint.md` only, not `docs/adr/`. Each ADR's decision is repeated in one line in the blueprint's Decisions table, so that line is what gate 2 approves.
 - The stack's digest covers `docs/stack.md` only, not `docs/adr/`. Each row's `Chosen:`, `Why:` and `ADR:` lines are what the stack gate approves.
+- The design's digest covers `docs/design/index.md` only; its `based-on` pins everything else under `docs/design/`, so an edited prototype or a new PNG fails the next gate until the design is approved again. The blueprint pins `docs/design/index.md`: a blueprint approved before the design stage existed carries `based-on: docs/CONCEPT.md@…` and fails `gate require specs` until the stack and the design are approved and the blueprint is approved again.
 - The concept's `based-on` pins `docs/brainstorm/summary.md` only, not `docs/brainstorm/notes.md`: the notes stay free to grow after gate 0.
 - `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
 - `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing. When `stack` is among the gates it checks, `require` also runs `stack check` on `docs/stack.md` and refuses while it has a finding; `gate stamp` never runs that check.
@@ -113,7 +120,7 @@ Only `/idea-to-issues:approve <gate>` calls `gate stamp`, and its `disable-model
 
 ## The spine: `bin/i2i.mjs`
 
-One zero-dependency Node tool with five modes:
+One zero-dependency Node tool with six modes:
 
 | Mode | Purpose |
 |---|---|
@@ -122,6 +129,7 @@ One zero-dependency Node tool with five modes:
 | `verify [--wait] [--interval <s>] [--timeout <s>]` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
 | `stack defaults [<category>…] \| check [<dir>]` | prints each stack category's default, question and research for the stack stage, or checks `docs/stack.md` against `docs/CONCEPT.md` |
+| `design shots [<dir>]` | screenshots every `data-screen` of `docs/design/prototype.html` at 390×844 and 1440×900 into `docs/design/png/`; finds Chrome through `I2I_CHROME` or the default locations |
 
 Run `node bin/i2i.mjs --help` for the usage.
 
@@ -167,6 +175,7 @@ Or in two steps:
 
 - [GitHub CLI](https://cli.github.com/) `gh` 2.94 or later, authenticated with the `project` scope: `gh auth refresh -s project`
 - Node.js 20 or later
+- Google Chrome or Chromium, for `i2i design shots`
 - git
 
 ## Development
