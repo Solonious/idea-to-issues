@@ -10,7 +10,7 @@
     {
       "name": "idea-to-issues",
       "source": "./",
-      "description": "Turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, blueprint, specs, tickets."
+      "description": "Turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, stack, blueprint, specs, tickets."
     }
   ]
 }

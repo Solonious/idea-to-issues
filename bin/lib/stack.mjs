@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 // The owner's default for every stack category, and the concept question that decides whether a
 // product needs it. The research behind each default is docs/stack-defaults.md.
 
@@ -29,3 +31,27 @@ export const CATEGORIES = [
   { category: 'error-tracking', default: 'Sentry (EU region)', question: null, always: true },
   { category: 'analytics', default: 'PostHog Cloud EU', question: null, always: true },
 ];
+
+// The research behind the defaults, shipped with the plugin. Resolved from this file, as test/stack.test.mjs does,
+// so the skill never reads outside its directory.
+const DEFAULTS_DOC = new URL('../../docs/stack-defaults.md', import.meta.url);
+
+// One block per category, all of them by default: its CATEGORIES fields, then its section of
+// docs/stack-defaults.md, the lines after its `## \`<category>\`: …` heading up to the next `## ` heading.
+export function renderDefaults(names = []) {
+  const all = CATEGORIES.map((c) => c.category);
+  for (const n of names) {
+    if (!all.includes(n)) throw new Error(`"${n}" is not a category; the categories are ${all.join(', ')}`);
+  }
+  const parts = readFileSync(DEFAULTS_DOC, 'utf8').split(/^## /m);
+  const blocks = (names.length === 0 ? all : names).map((name) => {
+    const c = CATEGORIES.find((x) => x.category === name);
+    const part = parts.find((p) => p.startsWith(`\`${name}\`:`));
+    if (part === undefined) throw new Error(`docs/stack-defaults.md has no section for ${name}`);
+    const nl = part.indexOf('\n');
+    const heading = nl === -1 ? part : part.slice(0, nl);
+    const body = nl === -1 ? '' : part.slice(nl + 1).trim();
+    return `## ${heading}\ncategory: ${name}\ndefault: ${c.default}\nalways: ${c.always ? 'yes' : 'no'}\nquestion: ${c.question ?? 'none'}\n\n${body}\n`;
+  });
+  return blocks.join('\n');
+}

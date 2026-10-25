@@ -3,6 +3,7 @@
 import { join } from 'node:path';
 import { parseSpecs, checkSpecs, renderTable, formatFinding } from './lib/spec.mjs';
 import { STAGES, repoRoot, resolveGate, requireStage, stamp } from './lib/gate.mjs';
+import { renderDefaults } from './lib/stack.mjs';
 import { planFile, describe, perform } from './lib/file.mjs';
 import { readIssues } from './lib/github.mjs';
 import { verifyIssues, formatDefect, waitSettled } from './lib/verify.mjs';
@@ -12,6 +13,7 @@ const MODES = {
   file: { usage: 'file --dry-run | --apply [--limit N] [--project <title>]', summary: 'file Issues, links, labels and Project items in dependency order' },
   verify: { usage: 'verify [--wait] [--interval <s>] [--timeout <s>]', summary: 'compare the approved spec blocks with what GitHub holds' },
   gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter' },
+  stack: { usage: 'stack defaults [<category>…]', summary: 'print the default, the question and the research behind each stack category' },
 };
 
 // Seconds between two --wait polls, and the most --wait spends before it gives up.
@@ -64,6 +66,21 @@ function runCheck(args) {
   const acs = spec.epics.reduce((sum, e) => sum + e.acs.length, 0);
   process.stdout.write(`check: ${spec.epics.length} epics, ${order.length} tickets, ${acs} ACs, 0 findings\n`);
   return 0;
+}
+
+function runStack(args) {
+  const [action, ...names] = args;
+  if (action !== 'defaults') {
+    process.stderr.write('Usage: i2i stack defaults [<category>…]\n');
+    return 2;
+  }
+  try {
+    process.stdout.write(renderDefaults(names));
+    return 0;
+  } catch (err) {
+    process.stderr.write(`i2i stack defaults: ${err.message}\n`);
+    return /is not a category/.test(err.message) ? 2 : 1;
+  }
 }
 
 function runGate(args) {
@@ -265,6 +282,7 @@ function main(argv) {
   if (mode === 'check') return runCheck(argv.slice(1));
   if (mode === 'gate') return runGate(argv.slice(1));
   if (mode === 'file') return runFile(argv.slice(1));
+  if (mode === 'stack') return runStack(argv.slice(1));
   return runVerify(argv.slice(1));
 }
 

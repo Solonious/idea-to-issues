@@ -10,6 +10,7 @@ import { join, relative, resolve } from 'node:path';
 export const STAGES = {
   brainstorm: { doc: 'docs/brainstorm/summary.md', gate: true },
   concept: { doc: 'docs/CONCEPT.md', gate: true, upstream: 'brainstorm' },
+  stack: { doc: 'docs/stack.md', gate: true, upstream: 'concept' },
   blueprint: { doc: 'docs/blueprint.md', gate: true, upstream: 'concept' },
   specs: { doc: 'docs/specs', upstream: 'blueprint' },
   tickets: { doc: 'docs/specs/index.md', gate: true, upstream: 'specs' },

@@ -135,6 +135,46 @@ test('require concept fails while the brainstorm summary is missing, unapproved 
   assert.match(r.stderr, /docs\/brainstorm\/summary\.md was edited after its approval on \d{4}-\d{2}-\d{2}/);
 });
 
+test('require stack fails while the concept is missing, unapproved or edited after its approval, and stamp stack pins the concept', (t) => {
+  const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  git(repo, 'push', '--quiet');
+  let r = i2i(repo, 'gate', 'require', 'stack');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/CONCEPT\.md does not exist/);
+
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'stack');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/CONCEPT\.md is not approved: review it, then run \/idea-to-issues:approve concept/);
+
+  stamp(repo, 'concept');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'stack');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^gate: stack may start \(checked brainstorm, concept\)$/m);
+
+  write(repo, 'docs/stack.md', '# Stack\n\nRows.\n');
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+  const doc = read(repo, 'docs/stack.md');
+  assert.match(doc, /^---\napproved: \d{4}-\d{2}-\d{2}\ndigest: sha256:[0-9a-f]{64}\nbased-on: docs\/CONCEPT\.md@[0-9a-f]{40}\n---\n/);
+  assert.ok(doc.endsWith('# Stack\n\nRows.\n'), 'the body is unchanged');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^gate: blueprint may start \(checked brainstorm, concept\)$/m);
+
+  write(repo, 'docs/CONCEPT.md', read(repo, 'docs/CONCEPT.md') + '\nAlso a mobile app.\n');
+  r = i2i(repo, 'gate', 'require', 'stack');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/CONCEPT\.md was edited after its approval on \d{4}-\d{2}-\d{2}/);
+});
+
 test('the brainstorm notes are not pinned: editing them after gate 0 disturbs no later gate', (t) => {
   const { repo } = approvedChain(t);
   write(repo, 'docs/brainstorm/notes.md', '# Brainstorm notes\n\n## 2026-10-24 — free\n\nMore ideas.\n');
