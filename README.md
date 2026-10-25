@@ -29,7 +29,7 @@ Stage 0 is `/idea-to-issues:brainstorm`. An idea alone is enough; a prototype li
 
 Stage 1 is `/idea-to-issues:concept`. It starts with `i2i gate require concept` and stops unless the brainstorm summary is approved and unchanged since. It reads the approved summary, asks once for a prototype link if you have one, and interviews you one question at a time: the problem, the audience, the first version, how it differs from the brainstorm's competitors, and the product facts the stack stage depends on — the platform, the number of users, offline use, the budget, and whether each stack category is needed. It runs no competitor search of its own. Every answer is a numbered ruling in `docs/CONCEPT.md`; a ruling that decides a stack category is tagged with the category names, so the stack stage can cite it. It ends by asking you to run `/idea-to-issues:approve concept`.
 
-The stack stage is `/idea-to-issues:stack`. It starts with `i2i gate require stack` and stops unless the concept is approved and unchanged since, and stops before writing anything when a stack category has no ruling in the concept. For every category the concept needs, and the three always needed, two subagents argue the owner's default against the best alternative, each with a rebuttal, and the row records both verbatim with the reason one won; a deviation gets an ADR. Categories the concept ruled out go to an exclusion ledger that one more subagent challenges; every concept ruling is mapped. The gate page shows the debates in the conversation language; you approve `docs/stack.md` with `/idea-to-issues:approve stack`. The research behind each default is `i2i stack defaults`.
+The stack stage is `/idea-to-issues:stack`. It starts with `i2i gate require stack` and stops unless the concept is approved and unchanged since, and stops before writing anything when a stack category has no ruling in the concept. For every category the concept needs, and the three always needed, two subagents argue the owner's default against the best alternative, each with a rebuttal, and the row records both verbatim with the reason one won; a deviation gets an ADR. Categories the concept ruled out go to an exclusion ledger that one more subagent challenges; every concept ruling is mapped. The gate page shows the debates in the conversation language; you approve `docs/stack.md` with `/idea-to-issues:approve stack`. Before the gate page, `i2i stack check docs` refuses a stack that drops a category, excludes an always-needed one, cites a ruling the concept does not have, leaves a row without its driver or leaves a ruling unmapped; the next stage's `i2i gate require` runs the same check. The research behind each default is `i2i stack defaults`.
 
 Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. It runs on Fable, the strongest model (see [Models and cost](#models-and-cost)). The blueprint does not read `docs/stack.md` yet; it still designs on the fixed stack below.
 
@@ -78,6 +78,8 @@ The plugin also ships the owner's default for every stack category a product may
 | blueprint | the architecture, on a rendered page |
 | tickets | the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub |
 
+Before the stack gate page, `stack check docs` rejects a `docs/stack.md` that drops a category or cites a ruling the concept does not have; the format is in `docs/CONTRACT.md`.
+
 Before gate 3, `check` rejects a ticket graph that is cyclic, leaves an acceptance criterion uncovered, or is malformed. The spec format is `docs/CONTRACT.md`.
 
 ### Gate stamps
@@ -105,7 +107,7 @@ based-on: docs/CONCEPT.md@<commit sha>
 - The stack's digest covers `docs/stack.md` only, not `docs/adr/`. Each row's `Chosen:`, `Why:` and `ADR:` lines are what the stack gate approves.
 - The concept's `based-on` pins `docs/brainstorm/summary.md` only, not `docs/brainstorm/notes.md`: the notes stay free to grow after gate 0.
 - `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
-- `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing.
+- `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing. When `stack` is among the gates it checks, `require` also runs `stack check` on `docs/stack.md` and refuses while it has a finding; `gate stamp` never runs that check.
 
 Only `/idea-to-issues:approve <gate>` calls `gate stamp`, and its `disable-model-invocation: true` means only you can fire it, not the agent. An agent with Bash can still run `i2i.mjs gate stamp` directly. A user-only command turns "forgot the gate" into "deliberately forged it", which is the most a plugin can do.
 
@@ -119,7 +121,7 @@ One zero-dependency Node tool with five modes:
 | `file --dry-run \| --apply [--limit N] [--project <title>]` | creates Issues, parent and blocked-by links, labels and Project items in dependency order |
 | `verify [--wait] [--interval <s>] [--timeout <s>]` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
-| `stack defaults [<category>…]` | prints each stack category's default, question and research for the stack stage |
+| `stack defaults [<category>…] \| check [<dir>]` | prints each stack category's default, question and research for the stack stage, or checks `docs/stack.md` against `docs/CONCEPT.md` |
 
 Run `node bin/i2i.mjs --help` for the usage.
 

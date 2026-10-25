@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { STAGES, requireStage } from '../bin/lib/gate.mjs';
 
 const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const APPROVE = fileURLToPath(new URL('../commands/approve.md', import.meta.url));
@@ -355,6 +356,35 @@ test('gate 3 pins the specs without its own document, and require file checks it
   r = i2i(repo, 'gate', 'require', 'file');
   assert.equal(r.status, 1);
   assert.match(r.stderr, /docs\/specs\/billing\.md \| \d+/);
+});
+
+test('require refuses a stage after stack while docs/stack.md has findings, and stamp stack does not run the check', (t) => {
+  const { repo } = setup(t, { remote: false });
+  const fixture = (name) => readFileSync(fileURLToPath(new URL(`./fixtures/stack/valid/${name}`, import.meta.url)), 'utf8');
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', fixture('CONCEPT.md'));
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', fixture('stack.md').split('\n').filter((l) => !l.startsWith('| `email` |')).join('\n'));
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+
+  assert.equal(i2i(repo, 'gate', 'require', 'blueprint').status, 0);
+
+  // No stage builds on stack until #42 adds design; a probe stage proves the wiring in-process.
+  STAGES.design = { doc: 'docs/design/index.md', gate: true, upstream: 'stack' };
+  t.after(() => { delete STAGES.design; });
+  const refused = requireStage(repo, 'design');
+  assert.deepEqual(refused.gates, ['brainstorm', 'concept', 'stack']);
+  assert.ok(refused.problems.some((p) => /^docs\/stack\.md:\d+: \[email\] missing-category: /.test(p)), refused.problems.join('\n'));
+  assert.ok(refused.problems.some((p) => p.includes('revise it with /idea-to-issues:stack')));
+
+  write(repo, 'docs/stack.md', fixture('stack.md'));
+  commit(repo, 'stack fixed');
+  stamp(repo, 'stack');
+  assert.deepEqual(requireStage(repo, 'design').problems, []);
 });
 
 test('require fails on front matter that is never closed', (t) => {

@@ -120,7 +120,8 @@ test('the example in docs/CONTRACT.md passes check', (t) => {
   const tmp = tempDir(t);
   const files = [...readFileSync(CONTRACT, 'utf8').matchAll(/^````markdown (\S+\.md)\n([\s\S]*?)\n````$/gm)];
   assert.ok(files.length >= 1);
-  for (const [, name, content] of files) writeFileSync(join(tmp, name), content + '\n');
+  // The `docs/…` fences belong to the stack contract; test/stack.test.mjs runs them.
+  for (const [, name, content] of files) if (!name.includes('/')) writeFileSync(join(tmp, name), content + '\n');
   const { status, stderr } = i2i('check', tmp);
   assert.equal(status, 0, stderr);
 });

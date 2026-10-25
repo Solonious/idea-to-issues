@@ -55,3 +55,103 @@ export function renderDefaults(names = []) {
   });
   return blocks.join('\n');
 }
+
+const FENCE_OPEN = /^(`{3,}|~{3,})/;
+
+// The lines of a document that carry content, as `{ line, at }` with `at` the 1-based line number: front
+// matter and fenced code are skipped, the way spec.mjs reads an epic file. An unclosed front matter leaves none.
+function* contentLines(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trimEnd());
+  let i = 0;
+  if (lines[0] === '---') {
+    const end = lines.indexOf('---', 1);
+    if (end < 0) return;
+    i = end + 1;
+  }
+  let fence = null;
+  for (let n = i; n < lines.length; n++) {
+    const line = lines[n];
+    if (fence) {
+      if (line[0] === fence[0] && /^(`+|~+)$/.test(line) && line.length >= fence.length) fence = null;
+      continue;
+    }
+    const open = FENCE_OPEN.exec(line);
+    if (open) { fence = open[1]; continue; }
+    yield { line, at: n + 1 };
+  }
+}
+
+// Ruling numbers of docs/CONCEPT.md: the `N. ` items under `## Rulings`, up to the next `## ` heading.
+export function parseRulings(text) {
+  const rulings = new Set();
+  let inRulings = false;
+  for (const { line } of contentLines(text)) {
+    if (/^## /.test(line)) inRulings = line === '## Rulings';
+    else if (inRulings) {
+      const m = /^([1-9]\d*)\. /.exec(line);
+      if (m) rulings.add(Number(m[1]));
+    }
+  }
+  return rulings;
+}
+
+const ALWAYS = new Set(CATEGORIES.filter((c) => c.always).map((c) => c.category));
+
+// Checks docs/stack.md against the concept's rulings. `file` is the label findings carry.
+export function checkStack(file, text, rulings) {
+  const rows = [];
+  const ledger = [];
+  const mapping = new Map();
+  const refs = [];
+  let section = null;
+  let rowsLine = 1;
+  let mappingLine = 1;
+  for (const { line, at } of contentLines(text)) {
+    const h = /^## (.+)$/.exec(line);
+    if (h) {
+      section = h[1];
+      if (section === 'Rows') rowsLine = at;
+      if (section === 'Rulings mapping') mappingLine = at;
+    }
+    if (!line.startsWith('>')) {
+      for (const m of line.matchAll(/\bRuling ([1-9]\d*)\b/g)) refs.push({ n: Number(m[1]), line: at });
+    }
+    if (section === 'Rows') {
+      const r = /^### (?:`([a-z0-9-]+)`|(\S.*))$/.exec(line);
+      const d = /^Driver: (.*)$/.exec(line);
+      if (r) rows.push({ name: r[1] ?? r[2], category: r[1] ?? null, line: at, driver: undefined });
+      else if (d && rows.length > 0 && rows.at(-1).driver === undefined) rows.at(-1).driver = d[1].trim();
+    } else if (section === 'Exclusion ledger') {
+      const l = /^\| `([a-z0-9-]+)` \| (.*?) \| (.*) \|$/.exec(line);
+      if (l) ledger.push({ category: l[1], line: at });
+    } else if (section === 'Rulings mapping') {
+      const m = /^\| Ruling ([1-9]\d*) \| (.*?) \|$/.exec(line);
+      if (m) mapping.set(Number(m[1]), { mapsTo: m[2].trim(), line: at });
+    }
+  }
+
+  const findings = [];
+  const add = (line, key, rule, message) => findings.push({ file, line, key, rule, message });
+  const placed = new Set([...rows.map((r) => r.category), ...ledger.map((l) => l.category)]);
+  for (const c of CATEGORIES) {
+    if (!placed.has(c.category)) add(rowsLine, c.category, 'missing-category', `\`${c.category}\` is neither a row nor a ledger line`);
+  }
+  for (const l of ledger) {
+    if (ALWAYS.has(l.category)) add(l.line, l.category, 'not-needed-on-always-on', `\`${l.category}\` is always needed and cannot be excluded`);
+  }
+  for (const r of refs) {
+    if (!rulings.has(r.n)) add(r.line, `Ruling ${r.n}`, 'bad-ruling-ref', `Ruling ${r.n} is not a ruling of the concept`);
+  }
+  for (const r of rows) {
+    const ok = r.driver !== undefined && (/^Ruling [1-9]\d*$/.test(r.driver) || (r.driver === 'always' && ALWAYS.has(r.category)));
+    if (!ok) add(r.line, r.name, 'orphan-row', 'no "Driver: Ruling N" line');
+  }
+  let mapped = 0;
+  for (const n of [...rulings].sort((a, b) => a - b)) {
+    const m = mapping.get(n);
+    if (m && m.mapsTo !== '') mapped++;
+    else add(m ? m.line : mappingLine, `Ruling ${n}`, 'unmapped-ruling', `Ruling ${n} is mapped to nothing`);
+  }
+  findings.sort((a, b) => a.line - b.line);
+  return { findings, rows: rows.length, ledger: ledger.length, mapped };
+}

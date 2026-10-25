@@ -329,6 +329,15 @@ test('a changed decision gets a successor ADR, never a rewrite', () => {
   assert.ok(step5.includes('`Status: Accepted — amended by ADR-NNNN`'));
 });
 
+test('the stack skill runs the stack check after writing the document and before the gate page', () => {
+  const { body } = splitFront(read('skills/stack/SKILL.md'));
+  assert.ok(body.includes('i2i.mjs stack check docs'));
+  const at = (h) => body.indexOf(h);
+  assert.ok(at('## Step 7: Write docs/stack.md') < at('## Step 8: Run the stack check'));
+  assert.ok(at('## Step 8: Run the stack check') < at('## Step 9: Present the stack gate'));
+  assert.ok(body.includes('Driver: always'));
+});
+
 test('the stack template has its sections in order, no front matter, and the ten row labels in order', () => {
   const text = read('skills/stack/references/stack-template.md');
   const lines = text.split('\n');

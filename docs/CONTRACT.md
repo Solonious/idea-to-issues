@@ -223,3 +223,260 @@ Text.
 ````
 
 `test/check.test.mjs` extracts these fences and runs `check` on them, so the example is the contract's executable form.
+
+# Stack document contract
+
+`docs/stack.md` is checked against the rulings of `docs/CONCEPT.md`. `i2i stack check [<dir>]` reads `<dir>/stack.md` and `<dir>/CONCEPT.md` (`<dir>` defaults to `docs`) and reports findings in the same shape as `check`: `<file>:<line>: [<key>] <rule>: <message>`. A leading front matter block is skipped and line numbers stay real. Fenced code, and every line that starts with `>` (the subagents' verbatim arguments), is opaque to ruling references.
+
+The concept's rulings are the `N. ` items under `## Rulings`, up to the next `## ` heading. The stack document has three sections the check reads; every other section is free text:
+
+- `## Rows`: one `### ` heading per row. A row for a category of the tool's list is headed with the backticked category (`` ### `web-framework` ``); a row for a need outside that list has a plain heading. A line `Driver: Ruling N` names the ruling that drives the row; `Driver: always` is allowed only on the row of an always-needed category (`ci-cd`, `error-tracking`, `analytics`). The first `Driver:` line of a row counts.
+- `## Exclusion ledger`: a table whose lines read `` | `<category>` | Ruling N | <reason> | ``, one per category the concept ruled out. An always-needed category never appears here.
+- `## Rulings mapping`: a table whose lines read `| Ruling N | <maps to> |`, one per ruling of the concept. `<maps to>` is never empty.
+
+Every `Ruling N` written outside a fence and outside a `>` line, in any section, must be a ruling of the concept.
+
+| Rule | Meaning |
+|---|---|
+| `missing-category` | A category of the tool's list is neither a row nor a ledger line. The finding is on the `## Rows` line. |
+| `not-needed-on-always-on` | An always-needed category is on the ledger. |
+| `bad-ruling-ref` | A `Ruling N` that is not a ruling of the concept. One finding per occurrence. |
+| `orphan-row` | A row without a `Driver: Ruling N` line (or `Driver: always` on an always-needed category's row). |
+| `unmapped-ruling` | A ruling of the concept with no line in the mapping, or one that maps to nothing. |
+
+Findings go to stderr, sorted by line, followed by `stack check: N finding(s)`, and the exit code is 1. With none, stdout reads `stack check: <rows> rows, <ledger> ledger lines, <mapped> rulings mapped, 0 findings` and the exit code is 0. A missing `stack.md` or `CONCEPT.md`, or a wrong argument, exits 2.
+
+`i2i gate require <stage>` runs the same check once every gate before `<stage>` holds and `stack` is among them, and refuses the stage while `docs/stack.md` has a finding; `gate stamp` never runs it.
+
+The example is a stack for a browser-only household plant reminder: its concept first, then its stack.
+
+````markdown docs/CONCEPT.md
+# Concept: Plant reminders
+
+## Problem
+
+A household keeps a dozen houseplants and forgets which one was watered when. Today they guess from a note on the fridge.
+
+## Who it is for
+
+The people of one household. Not a shop, not a garden centre.
+
+## Competitors
+
+The competitors activity was skipped.
+
+## Rulings
+
+1. Where will people use the product: in a browser, as a native mobile app, on the desktop, from the command line, or inside another tool? → In a browser — the household uses a laptop and a phone browser
+2. How many people will use it in its first year: one person, a household or a small team, hundreds, or the public? → A household — four people
+3. Must the product work without a network connection, and if so, what must work offline? → No — the household is always online at home
+4. How much may the first version cost a month in hosting and third-party services? → Nothing — a hobby project
+5. Will the product ship more than one deployable app or service, such as a web app and an API, from one codebase? → No — a single browser app [stack: monorepo]
+6. Does the product need a user interface in the browser, or is it an API, a CLI or an integration only? → Yes — people use it in a browser [stack: web-framework, web-hosting, ui-library]
+7. Does the product need server-side logic or data shared between users, or can it run entirely in the browser? → No — it runs entirely in the browser [stack: api-framework, api-hosting]
+8. Does the product store data on a server: records that outlive a session or are shared between users? → No — the plants live in the browser [stack: data-access, database-engine, database-hosting]
+9. Will people sign in to the product, or does any of its data belong to a specific person? → No — one shared household list [stack: auth]
+10. Will users upload or download files in the product, such as images, documents or exports? → No — no photos in the first version [stack: file-storage]
+11. Must the product ever email a user, such as a sign-in link, a password reset, a receipt or an alert? → No — reminders are on screen [stack: email]
+12. Must the product alert users while they do not have it open? → No — the list is checked by hand [stack: push]
+13. Will users pay money inside the product: a subscription, a one-off purchase or usage charges? → No — it is free [stack: payments]
+14. Does any feature need to generate, summarise, classify or converse in natural language rather than follow fixed rules? → No — fixed watering intervals [stack: ai-api]
+15. Should each plant show the shop it came from on a map? → Yes — the household buys from three shops
+
+## Open threads
+
+- Plant photos: settled by whether the household asks for them after a month
+````
+
+````markdown docs/stack.md
+# Stack: Plant reminders
+
+Concept: `docs/CONCEPT.md`
+
+## Capability profile
+
+- `monorepo`: no — Ruling 5
+- `web-framework`, `web-hosting`, `ui-library`: yes — Ruling 6
+- `api-framework`, `api-hosting`: no — Ruling 7
+- `data-access`, `database-engine`, `database-hosting`: no — Ruling 8
+- `auth`: no — Ruling 9
+- `file-storage`: no — Ruling 10
+- `email`: no — Ruling 11
+- `push`: no — Ruling 12
+- `payments`: no — Ruling 13
+- `ai-api`: no — Ruling 14
+- `ci-cd`, `error-tracking`, `analytics`: always
+
+## Rows
+
+### `web-framework`
+
+Default: Angular
+Chosen: Angular
+Driver: Ruling 6
+Alternative: Alternative web-framework
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+The default stands; Ruling 6 gives no fact it cannot meet.
+ADR: none
+
+### `web-hosting`
+
+Default: Vercel
+Chosen: Vercel
+Driver: Ruling 6
+Alternative: Alternative web-hosting
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+The default stands; Ruling 6 gives no fact it cannot meet.
+ADR: none
+
+### `ui-library`
+
+Default: spartan/ui (Tailwind CSS v4)
+Chosen: spartan/ui (Tailwind CSS v4)
+Driver: Ruling 6
+Alternative: Alternative ui-library
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+The default stands; Ruling 6 gives no fact it cannot meet.
+ADR: none
+
+### `ci-cd`
+
+Default: GitHub Actions
+Chosen: GitHub Actions
+Driver: always
+Alternative: Alternative ci-cd
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+Always needed; the default stands.
+ADR: none
+
+### `error-tracking`
+
+Default: Sentry (EU region)
+Chosen: Sentry (EU region)
+Driver: always
+Alternative: Alternative error-tracking
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+Always needed; the default stands.
+ADR: none
+
+### `analytics`
+
+Default: PostHog Cloud EU
+Chosen: PostHog Cloud EU
+Driver: always
+Alternative: Alternative analytics
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+Always needed; the default stands.
+ADR: none
+
+### maps
+
+Default: none — the owner decides
+Chosen: Leaflet
+Driver: Ruling 15
+Alternative: MapLibre
+For the default:
+> The default fits the concept.
+For the alternative:
+> The alternative fits less well.
+Rebuttal by the default:
+> Nothing to concede.
+Rebuttal by the alternative:
+> Nothing to add.
+Why:
+The owner decides; maps is the only candidate.
+ADR: 0001
+
+## Exclusion ledger
+
+| Category | Ruling | Reason |
+|---|---|---|
+| `monorepo` | Ruling 5 | A single browser app |
+| `api-framework` | Ruling 7 | It runs entirely in the browser |
+| `api-hosting` | Ruling 7 | It runs entirely in the browser |
+| `data-access` | Ruling 8 | The plants live in the browser |
+| `database-engine` | Ruling 8 | The plants live in the browser |
+| `database-hosting` | Ruling 8 | The plants live in the browser |
+| `auth` | Ruling 9 | One shared household list |
+| `file-storage` | Ruling 10 | No photos in the first version |
+| `email` | Ruling 11 | Reminders are on screen |
+| `push` | Ruling 12 | The list is checked by hand |
+| `payments` | Ruling 13 | It is free |
+| `ai-api` | Ruling 14 | Fixed watering intervals |
+
+## Ledger challenge
+
+> No ruling needs an excluded category.
+
+Finding: none
+
+## Rulings mapping
+
+| Ruling | Maps to |
+|---|---|
+| Ruling 1 | no runtime need |
+| Ruling 2 | no runtime need |
+| Ruling 3 | no runtime need |
+| Ruling 4 | no runtime need |
+| Ruling 5 | ledger |
+| Ruling 6 | `web-framework`, `web-hosting`, `ui-library` |
+| Ruling 7 | ledger |
+| Ruling 8 | ledger |
+| Ruling 9 | ledger |
+| Ruling 10 | ledger |
+| Ruling 11 | ledger |
+| Ruling 12 | ledger |
+| Ruling 13 | ledger |
+| Ruling 14 | ledger |
+| Ruling 15 | maps |
+````
+
+`test/stack.test.mjs` extracts these fences and runs `stack check` on them, so the example is the contract's executable form.

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // i2i: the deterministic spine of idea-to-issues. Zero dependencies, Node 20+.
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseSpecs, checkSpecs, renderTable, formatFinding } from './lib/spec.mjs';
 import { STAGES, repoRoot, resolveGate, requireStage, stamp } from './lib/gate.mjs';
-import { renderDefaults } from './lib/stack.mjs';
+import { renderDefaults, parseRulings, checkStack } from './lib/stack.mjs';
 import { planFile, describe, perform } from './lib/file.mjs';
 import { readIssues } from './lib/github.mjs';
 import { verifyIssues, formatDefect, waitSettled } from './lib/verify.mjs';
@@ -13,7 +14,7 @@ const MODES = {
   file: { usage: 'file --dry-run | --apply [--limit N] [--project <title>]', summary: 'file Issues, links, labels and Project items in dependency order' },
   verify: { usage: 'verify [--wait] [--interval <s>] [--timeout <s>]', summary: 'compare the approved spec blocks with what GitHub holds' },
   gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter' },
-  stack: { usage: 'stack defaults [<category>…]', summary: 'print the default, the question and the research behind each stack category' },
+  stack: { usage: 'stack defaults [<category>…] | check [<dir>]', summary: 'print the research behind each stack category, or check docs/stack.md against docs/CONCEPT.md' },
 };
 
 // Seconds between two --wait polls, and the most --wait spends before it gives up.
@@ -70,8 +71,10 @@ function runCheck(args) {
 
 function runStack(args) {
   const [action, ...names] = args;
+  const usage = 'Usage: i2i stack defaults [<category>…] | check [<dir>]\n';
+  if (action === 'check') return runStackCheck(names, usage);
   if (action !== 'defaults') {
-    process.stderr.write('Usage: i2i stack defaults [<category>…]\n');
+    process.stderr.write(usage);
     return 2;
   }
   try {
@@ -81,6 +84,34 @@ function runStack(args) {
     process.stderr.write(`i2i stack defaults: ${err.message}\n`);
     return /is not a category/.test(err.message) ? 2 : 1;
   }
+}
+
+function runStackCheck(args, usage) {
+  const [dir = 'docs', ...extra] = args;
+  if (extra.length > 0 || dir.startsWith('--')) {
+    process.stderr.write(usage);
+    return 2;
+  }
+  const stackFile = join(dir, 'stack.md');
+  const conceptFile = join(dir, 'CONCEPT.md');
+  let stackText;
+  let conceptText;
+  let path = stackFile;
+  try {
+    stackText = readFileSync(stackFile, 'utf8');
+    path = conceptFile;
+    conceptText = readFileSync(conceptFile, 'utf8');
+  } catch (err) {
+    process.stderr.write(`i2i stack check: ${err.code === 'ENOENT' ? `${path} does not exist` : err.message}\n`);
+    return err.code === 'ENOENT' ? 2 : 1;
+  }
+  const { findings, rows, ledger, mapped } = checkStack(stackFile, stackText, parseRulings(conceptText));
+  if (findings.length > 0) {
+    process.stderr.write(findings.map((f) => `${formatFinding(f)}\n`).join('') + `stack check: ${findings.length} finding(s)\n`);
+    return 1;
+  }
+  process.stdout.write(`stack check: ${rows} rows, ${ledger} ledger lines, ${mapped} rulings mapped, 0 findings\n`);
+  return 0;
 }
 
 function runGate(args) {

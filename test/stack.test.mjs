@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORIES } from '../bin/lib/stack.mjs';
 
@@ -81,4 +83,79 @@ test('stack defaults with names prints only those, and refuses an unknown one or
     assert.equal(r.status, 2);
     assert.match(r.stderr, /^Usage: i2i stack defaults/);
   }
+});
+
+const FIXTURES = fileURLToPath(new URL('./fixtures/stack', import.meta.url));
+const CONTRACT = fileURLToPath(new URL('../docs/CONTRACT.md', import.meta.url));
+
+function tempDir(t) {
+  const tmp = mkdtempSync(join(tmpdir(), 'i2i-'));
+  t.after(() => rmSync(tmp, { recursive: true, force: true }));
+  return tmp;
+}
+
+// A copy of fixtures/stack/valid in a temp dir, with stack.md passed through `edit`.
+function mutated(t, edit) {
+  const tmp = tempDir(t);
+  copyFileSync(join(FIXTURES, 'valid', 'CONCEPT.md'), join(tmp, 'CONCEPT.md'));
+  writeFileSync(join(tmp, 'stack.md'), edit(readFileSync(join(FIXTURES, 'valid', 'stack.md'), 'utf8')));
+  return tmp;
+}
+
+const dropLine = (prefix) => (text) => {
+  const lines = text.split('\n');
+  const at = lines.findIndex((l) => l.startsWith(prefix));
+  assert.notEqual(at, -1, `no line starts with ${prefix}`);
+  lines.splice(at, 1);
+  return lines.join('\n');
+};
+
+test('stack check passes the valid fixture', () => {
+  const { status, stdout, stderr } = i2i('stack', 'check', join(FIXTURES, 'valid'));
+  assert.equal(status, 0, stderr);
+  assert.equal(stderr, '');
+  assert.match(stdout, /^stack check: 7 rows, 12 ledger lines, 15 rulings mapped, 0 findings$/m);
+});
+
+const RULES = [
+  ['missing-category', 'email', dropLine('| `email` |')],
+  ['not-needed-on-always-on', 'analytics', (text) => text.replace('|---|---|---|\n', '|---|---|---|\n| `analytics` | Ruling 2 | A household needs no analytics |\n')],
+  ['bad-ruling-ref', 'Ruling 60', (text) => text.replace('Driver: Ruling 6\n', 'Driver: Ruling 60\n')],
+  ['orphan-row', 'maps', dropLine('Driver: Ruling 15')],
+  ['unmapped-ruling', 'Ruling 3', dropLine('| Ruling 3 | no runtime need |')],
+];
+
+for (const [rule, key, edit] of RULES) {
+  test(`stack check reports ${rule} and only it`, (t) => {
+    const { status, stdout, stderr } = i2i('stack', 'check', mutated(t, edit));
+    assert.equal(status, 1, stderr);
+    assert.equal(stdout, '');
+    assert.ok(stderr.includes(` [${key}] ${rule}: `), stderr);
+    assert.match(stderr, /^stack check: 1 finding\(s\)$/m);
+  });
+}
+
+test('stack check usage and missing files exit 2', (t) => {
+  const usage = i2i('stack', 'check', 'a', 'b');
+  assert.equal(usage.status, 2);
+  assert.match(usage.stderr, /^Usage: i2i stack defaults/);
+  const none = i2i('stack', 'check', tempDir(t));
+  assert.equal(none.status, 2);
+  assert.match(none.stderr, /stack\.md does not exist/);
+  const tmp = tempDir(t);
+  copyFileSync(join(FIXTURES, 'valid', 'stack.md'), join(tmp, 'stack.md'));
+  const noConcept = i2i('stack', 'check', tmp);
+  assert.equal(noConcept.status, 2);
+  assert.match(noConcept.stderr, /CONCEPT\.md does not exist/);
+});
+
+test('the stack example in docs/CONTRACT.md passes stack check', (t) => {
+  const tmp = tempDir(t);
+  const files = [...readFileSync(CONTRACT, 'utf8').matchAll(/^````markdown (\S+\.md)\n([\s\S]*?)\n````$/gm)].filter((f) => f[1].startsWith('docs/'));
+  assert.equal(files.length, 2);
+  mkdirSync(join(tmp, 'docs'));
+  for (const [, name, content] of files) writeFileSync(join(tmp, name), content + '\n');
+  const { status, stdout, stderr } = i2i('stack', 'check', join(tmp, 'docs'));
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /0 findings$/m);
 });

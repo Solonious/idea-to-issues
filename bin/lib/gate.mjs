@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { formatFinding } from './spec.mjs';
+import { parseRulings, checkStack } from './stack.mjs';
 
 // Every stage in order. A gated stage's document carries the stamp; `file` is not a stage of its own,
 // it names the filing step, which needs gate 3.
@@ -158,6 +160,17 @@ function checkRemote(root, gates, problems, notes) {
   }
 }
 
+// Once the stack gate holds, docs/stack.md is also checked for content, the way `file` runs `check` after
+// `require file`. stamp() does not run it: the next stage's gate is where a document with findings is refused.
+function checkStackDoc(root, problems) {
+  const { doc } = STAGES.stack;
+  const rulings = parseRulings(readFileSync(join(root, STAGES.concept.doc), 'utf8'));
+  const { findings } = checkStack(doc, readFileSync(join(root, doc), 'utf8'), rulings);
+  if (findings.length === 0) return;
+  for (const f of findings) problems.push(formatFinding(f));
+  problems.push(`${doc} has ${findings.length} finding(s): revise it with /idea-to-issues:stack, then run /idea-to-issues:approve stack again`);
+}
+
 // May `name` start? Every gated stage before it must be approved, unedited since, and current with what it was based on.
 export function requireStage(root, name) {
   const gates = gatesBefore(name);
@@ -166,6 +179,7 @@ export function requireStage(root, name) {
   if (gates.length === 0) return { gates, problems, notes };
   checkRemote(root, gates, problems, notes);
   for (const gate of gates) checkGate(root, gate, problems);
+  if (gates.includes('stack') && problems.length === 0) checkStackDoc(root, problems);
   return { gates, problems, notes };
 }
 

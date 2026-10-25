@@ -13,7 +13,7 @@ Concept: `docs/CONCEPT.md`
 
 ## Rows
 
-<!-- One `### ` section per needed or always-needed category, in CATEGORIES order, then one per need outside CATEGORIES in ruling order. A CATEGORIES row's heading is the backticked category; a row for a need outside CATEGORIES has a plain heading and `Default: none — the owner decides`. Ten labelled lines at column 0, each exactly once, in this order. Default, Chosen, Driver, Alternative and ADR carry their value on the line. The four argument labels and Why stand alone on their line; the text follows. The four arguments are a subagent's words verbatim, every line prefixed `> ` (a blank line inside is `>`), so no line of them can read as a label. Why is the stage's own prose, plain lines up to ADR. ADR is `NNNN` when Chosen is not the default (a deviation, or a row with no default), else `none`. -->
+<!-- One `### ` section per needed or always-needed category, in CATEGORIES order, then one per need outside CATEGORIES in ruling order. A CATEGORIES row's heading is the backticked category; a row for a need outside CATEGORIES has a plain heading and `Default: none — the owner decides`. Ten labelled lines at column 0, each exactly once, in this order. Default, Chosen, Driver, Alternative and ADR carry their value on the line. Driver is `Ruling N`, or `always` on an always-needed category's row. The four argument labels and Why stand alone on their line; the text follows. The four arguments are a subagent's words verbatim, every line prefixed `> ` (a blank line inside is `>`), so no line of them can read as a label. Why is the stage's own prose, plain lines up to ADR. ADR is `NNNN` when Chosen is not the default (a deviation, or a row with no default), else `none`. -->
 
 ### `monorepo`
 
