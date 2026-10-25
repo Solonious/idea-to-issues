@@ -41,7 +41,7 @@ For every needed category, in `CATEGORIES` order (rows may run in parallel; with
 1. Run `i2i.mjs stack defaults <category>` and give its output verbatim to both advocates. It is the base research; copy nothing from memory.
 2. Dispatch two subagents with the Agent tool, `model: opus`, each given the concept's Problem, Who it is for and Rulings, the `stack defaults` output, and one assigned position. The default advocate argues the default for this product. The alternative advocate picks the best alternative for this product from the research's options (or one outside it only with a source it opened) and names it on its first line as `Alternative: <name>`. Both must cite `Ruling N` for every product fact they use, and any claim about a price, a version, a limit or lock-in that is not in the research, or that may have changed, cites a linked source they actually opened. Neither sees the other's first argument. Both write in English.
 3. Then always run a rebuttal round, still on `model: opus`: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose.
-4. Decide the row yourself: it is a technical question (the grilling skill, `/idea-to-issues:grilling`), settled from the evidence in the four texts. The default stands unless the alternative's case, after rebuttal, shows a concept fact (`Ruling N`) the default cannot meet or meets at a clearly higher cost or lock-in. Write `Why:` with that fact. The owner overrides any row at the gate.
+4. Decide the row yourself: it is a technical question (the grilling skill, `/idea-to-issues:grilling`), settled from the evidence in the four texts. The default stands unless the alternative's case, after rebuttal, shows a concept fact (`Ruling N`) the default cannot meet or meets at a clearly higher cost or lock-in. Write `Why:` with that fact. The owner overrides any row at the gate. An always-needed category's row has `Driver: always`; every other row's `Driver:` is the `Ruling N` that drives it.
 5. In the terminal print one short line per category and nothing of the debate: `` `<category>`: <chosen> (default) `` or `` `<category>`: <chosen> (deviates from <default>) ``. The verbatim debate goes only into `docs/stack.md`.
 6. A row with no default (Step 2's list): name the two best candidates from evidence; the pair argues candidate A against candidate B with the same rebuttal round; then ask the owner one question with a recommended answer (grilling format). Write the row with `Default: none — the owner decides`, `Chosen:` the owner's answer, `Alternative:` the other candidate, and the "default" slots holding the case for the chosen candidate. Terminal line: `<service>: <chosen> (no default; the owner chose)`.
 7. The `ui-library` row is final for every later stage: the design stage takes it as it is and never reopens it.
@@ -65,7 +65,17 @@ Never delete an ADR and never rewrite one to match what was decided later: the g
 
 The gate digest covers `docs/stack.md` only, not `docs/adr/`, so the row's `Chosen:`, `Why:` and `ADR:` lines are what the stack gate approves.
 
-## Step 8: Present the stack gate
+## Step 8: Run the stack check
+
+Run this once the documents are written:
+
+```bash
+i2i.mjs stack check docs
+```
+
+It checks `docs/stack.md` against the concept's rulings and reports five kinds of finding: `missing-category` (a category is neither a row nor a ledger line), `not-needed-on-always-on` (an always-needed category is on the ledger), `bad-ruling-ref` (a `Ruling N` the concept does not have), `orphan-row` (a row without its `Driver:` line) and `unmapped-ruling` (a ruling that maps to nothing). Fix every finding in `docs/stack.md` and run the check again until it prints `0 findings`. Never build the gate page while a finding is left, and never change the contract or the tool to make a finding go away. The next stage's `gate require` runs the same check and refuses a stack that has a finding.
+
+## Step 9: Present the stack gate
 
 Build the gate page after the documents are written, from `docs/stack.md` and the ADRs and nothing else. The page is a view of the markdown: every row, ledger line, finding and mapping on it appears in the markdown under the same category, `Ruling N`, ADR number or technology name, and the page says that the approval is of the English document `docs/stack.md`. When the owner asks for a change while reviewing it, change the markdown first, then rebuild the page from it. Nothing is decided only on the page.
 
@@ -76,7 +86,7 @@ The page opens with an overview table built from the rows, `| Category | Default
 - If the Artifact tool is in your tool list, publish the page as a private Artifact as described above. Give the owner the link.
 - If the Artifact tool is not in your tool list, print a markdown summary in the terminal instead: the document path, the overview table, each row's `Chosen:`, `Why:` and `ADR:` lines, the Exclusion ledger table, the `Finding:` lines and the Rulings mapping table. Its headings and explanations are in ${user_config.language}; the tables and the quoted lines are copied from the document as they are.
 
-## Step 9: Hand off to the stack gate
+## Step 10: Hand off to the stack gate
 
 Show the owner the document path, the ADR paths and a short summary, then ask them to run `/idea-to-issues:approve stack`. If `git status --porcelain -- docs/CONCEPT.md` prints anything, say that the approval will be refused until `docs/CONCEPT.md` is committed. Stop there.
 
