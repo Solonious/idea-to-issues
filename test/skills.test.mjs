@@ -9,7 +9,7 @@ import { CATEGORIES } from '../bin/lib/stack.mjs';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
-const SKILLS = ['brainstorm', 'concept', 'grilling', 'blueprint', 'specs', 'tickets'];
+const SKILLS = ['brainstorm', 'concept', 'stack', 'grilling', 'blueprint', 'specs', 'tickets'];
 
 function splitFront(text) {
   const lines = text.split('\n');
@@ -51,7 +51,7 @@ test('every skill talks in the language setting, which the plugin declares', () 
 
 test('every gate page is in the language setting and names the English document approved', () => {
   const pages = SKILLS.filter((name) => read(`skills/${name}/SKILL.md`).includes('Build the gate page'));
-  for (const name of ['blueprint', 'tickets']) assert.ok(pages.includes(name), `${name} builds a gate page`);
+  for (const name of ['stack', 'blueprint', 'tickets']) assert.ok(pages.includes(name), `${name} builds a gate page`);
   for (const name of pages) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes('The page is written entirely in ${user_config.language}'), `${name}: page language`);
@@ -62,7 +62,7 @@ test('every gate page is in the language setting and names the English document 
 });
 
 test('each gated stage skill hands off to its gate and never stamps', () => {
-  for (const name of ['brainstorm', 'concept', 'blueprint', 'tickets']) {
+  for (const name of ['brainstorm', 'concept', 'stack', 'blueprint', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
     for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
@@ -154,7 +154,7 @@ test('the blueprint skill asks for the strongest model', () => {
 });
 
 test('each later stage skill checks its gates before anything else', () => {
-  for (const name of ['concept', 'blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'stack', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const lines = body.split('\n');
     const first = lines.findIndex((l) => l.startsWith('## Step'));
@@ -166,7 +166,7 @@ test('each later stage skill checks its gates before anything else', () => {
 });
 
 test('after a refusal, each later stage waits for a new invocation of itself', () => {
-  for (const name of ['concept', 'blueprint', 'specs', 'tickets']) {
+  for (const name of ['concept', 'stack', 'blueprint', 'specs', 'tickets']) {
     const { body } = splitFront(read(`skills/${name}/SKILL.md`));
     const rule = `After a refusal, wait until the owner invokes \`/idea-to-issues:${name}\` again.`;
     const step1 = body.slice(body.indexOf('## Step 1'), body.indexOf('## Step 2'));
@@ -304,4 +304,55 @@ test('a changed decision gets a successor ADR, never a rewrite', () => {
   assert.ok(step5.includes('Never delete an ADR and never rewrite one'));
   assert.ok(step5.includes('`Status: Superseded by ADR-NNNN`'));
   assert.ok(step5.includes('`Status: Accepted — amended by ADR-NNNN`'));
+});
+
+test('the stack template has its sections in order, no front matter, and the ten row labels in order', () => {
+  const text = read('skills/stack/references/stack-template.md');
+  const lines = text.split('\n');
+  assert.ok(lines[0].startsWith('# Stack'));
+  assert.notEqual(lines[0], '---');
+  const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
+  assert.deepEqual(headings, ['Capability profile', 'Rows', 'Exclusion ledger', 'Ledger challenge', 'Rulings mapping']);
+  const first = lines.findIndex((l) => l.startsWith('### '));
+  const end = lines.findIndex((l, i) => i > first && /^##+ /.test(l));
+  const row = lines.slice(first, end);
+  const labels = ['Default:', 'Chosen:', 'Driver:', 'Alternative:', 'For the default:', 'For the alternative:', 'Rebuttal by the default:', 'Rebuttal by the alternative:', 'Why:', 'ADR:'];
+  let at = -1;
+  for (const label of labels) {
+    const idx = row.findIndex((l) => l.startsWith(label));
+    assert.ok(idx > at, `${label} appears after the previous label`);
+    at = idx;
+  }
+  for (const needle of ['Default: none — the owner decides', '| Category | Ruling | Reason |', '| Ruling | Maps to |', 'Finding: none']) {
+    assert.ok(text.includes(needle), needle);
+  }
+});
+
+test('the stack skill argues each row with its own pair, a rebuttal round and opened sources, reads the defaults through i2i, and stops without a ruling or the Agent tool', () => {
+  const { body } = splitFront(read('skills/stack/SKILL.md'));
+  for (const needle of [
+    'If the Agent tool is not in your tool list',
+    "Neither sees the other's first argument",
+    'rebuttal round',
+    'never argue both sides yourself',
+    'i2i.mjs stack defaults',
+    'actually opened',
+    '/idea-to-issues:concept',
+    'Default: none — the owner decides',
+    'the approval is of the English document `docs/stack.md`',
+    'If the Artifact tool is not in your tool list',
+    'markdown summary',
+    'keep its front matter block exactly as it is',
+  ]) {
+    assert.ok(body.includes(needle), needle);
+  }
+});
+
+test("the stack ADR template matches the blueprint's", () => {
+  const stack = read('skills/stack/references/adr-template.md').split('\n');
+  const blueprint = read('skills/blueprint/references/adr-template.md').split('\n');
+  const headings = (lines) => lines.filter((l) => l.startsWith('## '));
+  assert.deepEqual(headings(stack), headings(blueprint));
+  assert.equal(stack[2], 'Status: Accepted');
+  assert.equal(blueprint[2], 'Status: Accepted');
 });

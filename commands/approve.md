@@ -1,6 +1,6 @@
 ---
 description: Approve a gate. Stamps the stage document as approved; only you can run this.
-argument-hint: brainstorm | concept | blueprint | tickets
+argument-hint: brainstorm | concept | stack | blueprint | tickets
 disable-model-invocation: true
 allowed-tools: Bash(i2i.mjs gate stamp:*)
 ---

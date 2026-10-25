@@ -1,21 +1,22 @@
 # idea-to-issues
 
-A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, blueprint, specs, tickets.
+A Claude Code plugin that turns a product idea into a gated plan and a native GitHub Issues graph: brainstorm, concept, stack, blueprint, specs, tickets.
 
-> **Status: early development.** The plugin installs. The `i2i` modes and the five stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
+> **Status: early development.** The plugin installs. The `i2i` modes and the six stages are in; three release-time evals guard the refusals a pilot does not exercise. Progress is tracked in this repository's issues.
 
 ## What it does
 
-You bring an idea. The plugin walks it through five stages. Every stage but the brainstorm is one session; the brainstorm runs across as many as you want. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
+You bring an idea. The plugin walks it through six stages. Every stage but the brainstorm is one session; the brainstorm runs across as many as you want. Every stage writes a document to your repository and ends at a gate: either a human approval or a mechanical check. The last stage files the result as GitHub Issues, with native parent and blocked-by links, labels and Project items.
 
 The agent holds the judgement: the concept, the architecture, the specs, and whether an acceptance criterion is measurable. Code holds the structure, the gate stamps and every GitHub write.
 
-## The five stages
+## The six stages
 
 | Stage | Output | Ends at |
 |---|---|---|
 | brainstorm | `docs/brainstorm/notes.md` (working notes), `docs/brainstorm/summary.md` | gate 0 |
 | concept | `docs/CONCEPT.md` | gate 1 |
+| stack | `docs/stack.md`, `docs/adr/` | the stack gate |
 | blueprint | `docs/blueprint.md`, `docs/adr/` | gate 2 |
 | specs | `docs/specs/<epic>.md`, with acceptance criteria and `### [KEY-N]` ticket blocks | the mechanical `check` |
 | tickets | `docs/specs/index.md` (epic order), then the Issues | gate 3 |
@@ -28,7 +29,9 @@ Stage 0 is `/idea-to-issues:brainstorm`. An idea alone is enough; a prototype li
 
 Stage 1 is `/idea-to-issues:concept`. It starts with `i2i gate require concept` and stops unless the brainstorm summary is approved and unchanged since. It reads the approved summary, asks once for a prototype link if you have one, and interviews you one question at a time: the problem, the audience, the first version, how it differs from the brainstorm's competitors, and the product facts the stack stage depends on — the platform, the number of users, offline use, the budget, and whether each stack category is needed. It runs no competitor search of its own. Every answer is a numbered ruling in `docs/CONCEPT.md`; a ruling that decides a stack category is tagged with the category names, so the stack stage can cite it. It ends by asking you to run `/idea-to-issues:approve concept`.
 
-Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. Run this stage on your strongest model. The skill asks for `model: best`, which lasts only for its first turn, so start this stage's session with `claude --model best`: the flag applies to that session only. Inside a running session, open `/model` and press `s` on the strongest model's row instead. Typing `/model best` directly, or pressing Enter in the picker, also saves the model as the default for new sessions, so the next stage would run on it too. If that happened, open `/model`, select the model new sessions should start on, and press Enter.
+The stack stage is `/idea-to-issues:stack`. It starts with `i2i gate require stack` and stops unless the concept is approved and unchanged since, and stops before writing anything when a stack category has no ruling in the concept. For every category the concept needs, and the three always needed, two subagents argue the owner's default against the best alternative, each with a rebuttal, and the row records both verbatim with the reason one won; a deviation gets an ADR. Categories the concept ruled out go to an exclusion ledger that one more subagent challenges; every concept ruling is mapped. The gate page shows the debates in the conversation language; you approve `docs/stack.md` with `/idea-to-issues:approve stack`. The research behind each default is `i2i stack defaults`.
+
+Stage 2 is `/idea-to-issues:blueprint`. It starts with `i2i gate require blueprint` and stops unless the concept is approved and unchanged since. It settles the open threads the concept hands to it, writes `docs/blueprint.md` and one ADR per hard-to-reverse choice in `docs/adr/`, and shows gate 2 as a private Artifact page, or as a markdown summary in the terminal where the Artifact tool is not available. The page is a view of the markdown: you approve `docs/blueprint.md` with `/idea-to-issues:approve blueprint`. Run this stage on your strongest model. The skill asks for `model: best`, which lasts only for its first turn, so start this stage's session with `claude --model best`: the flag applies to that session only. Inside a running session, open `/model` and press `s` on the strongest model's row instead. Typing `/model best` directly, or pressing Enter in the picker, also saves the model as the default for new sessions, so the next stage would run on it too. If that happened, open `/model`, select the model new sessions should start on, and press Enter. The blueprint does not read `docs/stack.md` yet; it still designs on the fixed stack below.
 
 Stage 3 is `/idea-to-issues:specs`. It starts with `i2i gate require specs` and stops unless the blueprint is approved and unchanged since. It writes one `docs/specs/<key>.md` per epic in the blueprint: acceptance criteria in the contract format, a slice table with the epic's walking skeleton first, a coverage table, and the `### [KEY-N]` ticket blocks. It runs `i2i check docs/specs` and fixes every finding before it hands over to the tickets stage; `check` enforces the structure, and whether an acceptance criterion is measurable stays the agent's review. Commit `docs/specs` before the tickets stage, which pins it at gate 3. A cheaper model, such as Sonnet, is enough for this stage.
 
@@ -42,14 +45,17 @@ The blueprint always designs on the same stack: an Nx monorepo, an Angular web a
 
 The plugin also ships the owner's default for every stack category a product may need: the layers above, the UI library, the runtime services (auth, file storage, email, push, payments, AI APIs) and three operations categories (CI/CD, error tracking, analytics). They are the `CATEGORIES` list in `bin/lib/stack.mjs`. Each entry names its default and, unless the category is always needed, the concept question that decides whether a product needs it. CI/CD, error tracking and analytics are always needed. The concept stage asks every such question, so each answer is a numbered ruling in `docs/CONCEPT.md` that the stack stage cites.
 
-[`docs/stack-defaults.md`](docs/stack-defaults.md) records, per category, the options considered, the reasons and the sources. The stack stage that argues these defaults per product is not built yet; until it is, the blueprint designs on the fixed stack. Defaults age: changing one is a PR to `CATEGORIES` and to its section in that file.
+[`docs/stack-defaults.md`](docs/stack-defaults.md) records, per category, the options considered, the reasons and the sources. The stack stage argues these defaults per product and reads them with `i2i stack defaults [<category>…]`; the blueprint does not read `docs/stack.md` yet. Defaults age: changing one is a PR to `CATEGORIES` and to its section in that file.
 
-## The four gates
+## The gates
 
-0. **Brainstorm**: the owner reads the summary, translated, in the terminal and approves the English document.
-1. **Concept**: the owner rules on the open questions, one question at a time.
-2. **Blueprint**: the owner reviews the architecture on a rendered page.
-3. **Tickets**: the owner reviews the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub.
+| Gate | What you approve |
+|---|---|
+| brainstorm | the summary, read translated in the terminal, as the English document |
+| concept | the rulings on the open questions, one question at a time |
+| stack | the argued rows, the exclusion ledger and its challenge, on a rendered page |
+| blueprint | the architecture, on a rendered page |
+| tickets | the ticket graph on a rendered page, then a `file --dry-run` that lists every write before anything reaches GitHub |
 
 Before gate 3, `check` rejects a ticket graph that is cyclic, leaves an acceptance criterion uncovered, or is malformed. The spec format is `docs/CONTRACT.md`.
 
@@ -69,11 +75,13 @@ based-on: docs/CONCEPT.md@<commit sha>
 |---|---|---|
 | brainstorm | `docs/brainstorm/summary.md` | none |
 | concept | `docs/CONCEPT.md` | `docs/brainstorm/summary.md` |
+| stack | `docs/stack.md` | `docs/CONCEPT.md` |
 | blueprint | `docs/blueprint.md` | `docs/CONCEPT.md` |
 | tickets | `docs/specs/index.md` | `docs/specs`, without `index.md` itself |
 
 - `digest` pins the approved body, so a document edited after its approval no longer counts as approved.
 - The blueprint's digest covers `docs/blueprint.md` only, not `docs/adr/`. Each ADR's decision is repeated in one line in the blueprint's Decisions table, so that line is what gate 2 approves.
+- The stack's digest covers `docs/stack.md` only, not `docs/adr/`. Each row's `Chosen:`, `Why:` and `ADR:` lines are what the stack gate approves.
 - The concept's `based-on` pins `docs/brainstorm/summary.md` only, not `docs/brainstorm/notes.md`: the notes stay free to grow after gate 0.
 - `based-on` pins the upstream document at the commit the approval was made against. `gate stamp` takes the sha from `git rev-parse HEAD` and refuses while the upstream has uncommitted changes, so commit each approval before you approve the next gate.
 - `i2i gate require <stage>` runs `git fetch`, then fails unless every gate before `<stage>` is approved, unedited since, and current with what it was based on. It checks both the working tree and the upstream branch, because `git fetch` updates the upstream branch but not the working tree, so an edit made on GitHub is visible only there. `require file` checks gate 3 before filing.
@@ -82,7 +90,7 @@ Only `/idea-to-issues:approve <gate>` calls `gate stamp`, and its `disable-model
 
 ## The spine: `bin/i2i.mjs`
 
-One zero-dependency Node tool with four modes:
+One zero-dependency Node tool with five modes:
 
 | Mode | Purpose |
 |---|---|
@@ -90,6 +98,7 @@ One zero-dependency Node tool with four modes:
 | `file --dry-run \| --apply [--limit N] [--project <title>]` | creates Issues, parent and blocked-by links, labels and Project items in dependency order |
 | `verify [--wait] [--interval <s>] [--timeout <s>]` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
+| `stack defaults [<category>…]` | prints each stack category's default, question and research for the stack stage |
 
 Run `node bin/i2i.mjs --help` for the usage.
 
