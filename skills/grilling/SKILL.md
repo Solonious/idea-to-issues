@@ -1,6 +1,7 @@
 ---
 name: grilling
 description: Interviews the owner about a plan, decision or idea until they share one understanding, asking one product question at a time with a recommended answer. Used by the stage skills, and when the user says "grill me" or asks to stress-test an idea.
+model: inherit
 ---
 
 # Grilling
@@ -13,7 +14,7 @@ Interview the owner until you reach a shared understanding. Map the topic as a *
 
 ## Two kinds of question
 
-- **Technical and factual** (what the code or the docs say, what the market offers, what a tool can do): settle these yourself from evidence. Read, search, or dispatch a subagent. Never put them to the owner. A running lookup is an unsettled prerequisite, so only the questions downstream of it wait.
+- **Technical and factual** (what the code or the docs say, what the market offers, what a tool can do): settle these yourself from evidence. Read, search, or dispatch a subagent with the Agent tool, `model: sonnet`. Never put them to the owner. A running lookup is an unsettled prerequisite, so only the questions downstream of it wait.
 - **Product and taste** (who it is for, what is in or out, positioning, naming, priorities): these are the owner's. Put each to them and wait.
 
 ## One question per turn

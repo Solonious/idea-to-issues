@@ -1,6 +1,7 @@
 ---
 name: tickets
 description: Stage 4 of idea-to-issues. Orders the epics of a checked docs/specs into docs/specs/index.md, presents gate 3 on a rendered epic → ticket graph, then files the approved graph as GitHub Issues with i2i file (the dry run first, --apply only on the owner's yes) and ends when i2i verify --wait passes. Use for "tickets", "file the issues", "gate 3", or /idea-to-issues:tickets.
+model: sonnet
 ---
 
 # Tickets (stage 4)

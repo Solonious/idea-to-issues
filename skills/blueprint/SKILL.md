@@ -1,7 +1,7 @@
 ---
 name: blueprint
 description: Stage 2 of idea-to-issues. Turns an approved docs/CONCEPT.md into docs/blueprint.md and ADRs in docs/adr/ on a fixed stack (Nx, Angular, NestJS, Prisma, Vercel, Railway), and ends at gate 2 on a rendered review page. Use for a "blueprint", the "architecture" of an approved concept, or /idea-to-issues:blueprint.
-model: best
+model: fable
 ---
 
 # Blueprint (stage 2)

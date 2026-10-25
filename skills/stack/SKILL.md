@@ -1,6 +1,7 @@
 ---
 name: stack
 description: The stack stage of idea-to-issues, between the concept and the blueprint. Reads an approved docs/CONCEPT.md, argues every needed stack category as the owner's default against the best alternative with its own pair of subagents and a rebuttal round, writes docs/stack.md with an exclusion ledger and a rulings mapping plus an ADR per deviation, and ends at the stack gate on a rendered review page. Use for "stack", "which services", "the tech stack" of an approved concept, or /idea-to-issues:stack.
+model: opus
 ---
 
 # Stack
@@ -38,8 +39,8 @@ Write one line per group of categories that share a question, in `CATEGORIES` or
 For every needed category, in `CATEGORIES` order (rows may run in parallel; within a row the rebuttal waits for both first arguments):
 
 1. Run `i2i.mjs stack defaults <category>` and give its output verbatim to both advocates. It is the base research; copy nothing from memory.
-2. Dispatch two subagents with the Agent tool, each given the concept's Problem, Who it is for and Rulings, the `stack defaults` output, and one assigned position. The default advocate argues the default for this product. The alternative advocate picks the best alternative for this product from the research's options (or one outside it only with a source it opened) and names it on its first line as `Alternative: <name>`. Both must cite `Ruling N` for every product fact they use, and any claim about a price, a version, a limit or lock-in that is not in the research, or that may have changed, cites a linked source they actually opened. Neither sees the other's first argument. Both write in English.
-3. Then always run a rebuttal round: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose.
+2. Dispatch two subagents with the Agent tool, `model: opus`, each given the concept's Problem, Who it is for and Rulings, the `stack defaults` output, and one assigned position. The default advocate argues the default for this product. The alternative advocate picks the best alternative for this product from the research's options (or one outside it only with a source it opened) and names it on its first line as `Alternative: <name>`. Both must cite `Ruling N` for every product fact they use, and any claim about a price, a version, a limit or lock-in that is not in the research, or that may have changed, cites a linked source they actually opened. Neither sees the other's first argument. Both write in English.
+3. Then always run a rebuttal round, still on `model: opus`: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose.
 4. Decide the row yourself: it is a technical question (the grilling skill, `/idea-to-issues:grilling`), settled from the evidence in the four texts. The default stands unless the alternative's case, after rebuttal, shows a concept fact (`Ruling N`) the default cannot meet or meets at a clearly higher cost or lock-in. Write `Why:` with that fact. The owner overrides any row at the gate.
 5. In the terminal print one short line per category and nothing of the debate: `` `<category>`: <chosen> (default) `` or `` `<category>`: <chosen> (deviates from <default>) ``. The verbatim debate goes only into `docs/stack.md`.
 6. A row with no default (Step 2's list): name the two best candidates from evidence; the pair argues candidate A against candidate B with the same rebuttal round; then ask the owner one question with a recommended answer (grilling format). Write the row with `Default: none — the owner decides`, `Chosen:` the owner's answer, `Alternative:` the other candidate, and the "default" slots holding the case for the chosen candidate. Terminal line: `<service>: <chosen> (no default; the owner chose)`.
@@ -47,7 +48,7 @@ For every needed category, in `CATEGORIES` order (rows may run in parallel; with
 
 ## Step 5: Exclusion ledger and its challenge
 
-Write one ledger row per excluded category, never an always-needed one: Ruling is the tagged ruling, Reason is one line from its why. Then dispatch one subagent with the Agent tool, given the whole ledger, every ruling and the concept; it looks for a ruling that needs an excluded category. Paste its report verbatim as a blockquote under `## Ledger challenge`, then one `Finding:` line per finding (`Finding: none` when nothing). Resolve nothing: say on the gate page that the owner decides there, to approve the stack anyway or to revise `docs/CONCEPT.md`.
+Write one ledger row per excluded category, never an always-needed one: Ruling is the tagged ruling, Reason is one line from its why. Then dispatch one subagent with the Agent tool, `model: opus`, given the whole ledger, every ruling and the concept; it looks for a ruling that needs an excluded category. Paste its report verbatim as a blockquote under `## Ledger challenge`, then one `Finding:` line per finding (`Finding: none` when nothing). Resolve nothing: say on the gate page that the owner decides there, to approve the stack anyway or to revise `docs/CONCEPT.md`.
 
 ## Step 6: Rulings mapping
 
@@ -83,4 +84,4 @@ Show the owner the document path, the ADR paths and a short summary, then ask th
 
 Never write, change or remove the `approved`, `digest` or `based-on` keys, never add front matter to a new document, and never run `i2i.mjs gate stamp`. Only the owner approves, through `/idea-to-issues:approve stack`. The stamp records the owner's approval; a stamp written by the agent is a forged one.
 
-Never ask the owner a stack category question: the concept owns them. Never let one agent argue both sides of a row, and never skip the rebuttal round. Never change `docs/CONCEPT.md`, `docs/blueprint.md` or an existing ADR's body.
+Never ask the owner a stack category question: the concept owns them. Never ask the owner which model a subagent runs on: each dispatch above names it. Never let one agent argue both sides of a row, and never skip the rebuttal round. Never change `docs/CONCEPT.md`, `docs/blueprint.md` or an existing ADR's body.

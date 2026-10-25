@@ -1,6 +1,7 @@
 ---
 name: concept
 description: Stage 1 of idea-to-issues. Reads the approved brainstorm summary and turns it into docs/CONCEPT.md through a one-question-at-a-time interview that also settles the product facts the stack stage depends on, and ends at gate 1. Use for a "new product idea", a "concept", or /idea-to-issues:concept.
+model: opus
 ---
 
 # Concept (stage 1)
