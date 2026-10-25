@@ -1,6 +1,7 @@
 ---
 name: brainstorm
 description: Stage 0 of idea-to-issues. Takes a product idea, alone or with a prototype link, through as many sessions of brainstorming activities as the owner wants (user scenarios, an attack on the idea, alternative shapes, a deep competitor analysis), keeps working notes, and ends at gate 0 with docs/brainstorm/summary.md. Use for a "brainstorm", an "early idea", or /idea-to-issues:brainstorm.
+model: opus
 ---
 
 # Brainstorm (stage 0)
@@ -41,9 +42,9 @@ Cover a day of the user and the concrete situations the product is used in, step
 
 If the Agent tool is not in your tool list, say that the attack cannot run here and offer the other three activities; never argue both sides yourself.
 
-Otherwise dispatch two subagents with the Agent tool, each given the idea, the notes so far and one assigned position: one defends the idea, the other argues why it fails or why nobody needs it. Neither sees the other's first argument. Print both arguments verbatim, unabridged.
+Otherwise dispatch two subagents with the Agent tool, `model: opus`, each given the idea, the notes so far and one assigned position: one defends the idea, the other argues why it fails or why nobody needs it. Neither sees the other's first argument. Print both arguments verbatim, unabridged.
 
-Then always run a rebuttal round: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose. Print both replies verbatim. Then put the open question to the owner (one question, with a recommended answer).
+Then always run a rebuttal round, still on `model: opus`: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose. Print both replies verbatim. Then put the open question to the owner (one question, with a recommended answer).
 
 Append the entry with `### Defence`, `### Attack`, `### Rebuttal — defence`, `### Rebuttal — attack` and `### Ruling` (`<question> → <ruling> — <why>`).
 
@@ -79,4 +80,4 @@ Show the owner the whole summary translated into ${user_config.language} in the 
 
 Never write, change or remove the `approved`, `digest` or `based-on` keys, never add front matter to a new document, and never run `i2i.mjs gate stamp`. Only the owner approves, through `/idea-to-issues:approve brainstorm`. The stamp records the owner's approval; a stamp written by the agent is a forged one.
 
-Never rewrite an earlier entry of `docs/brainstorm/notes.md`, and never let one agent argue both sides of the attack.
+Never rewrite an earlier entry of `docs/brainstorm/notes.md`, and never let one agent argue both sides of the attack. Never ask the owner which model a subagent runs on: the attack names it.

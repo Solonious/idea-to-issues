@@ -148,9 +148,32 @@ test('the attack prints both sides verbatim with a rebuttal round, competitors c
   assert.ok(!body.includes('Build the gate page'), 'gate 0 is shown in the terminal, not on a page');
 });
 
-test('the blueprint skill asks for the strongest model', () => {
-  const { front } = splitFront(read('skills/blueprint/SKILL.md'));
-  assert.ok(front.includes('model: best'));
+test('each skill names the model the owner chose for it, and the README records the same', () => {
+  const MODELS = { brainstorm: 'opus', concept: 'opus', stack: 'opus', grilling: 'inherit', blueprint: 'fable', specs: 'opus', tickets: 'sonnet' };
+  assert.deepEqual(Object.keys(MODELS).sort(), [...SKILLS].sort());
+  const readme = read('README.md');
+  for (const name of SKILLS) {
+    const { front } = splitFront(read(`skills/${name}/SKILL.md`));
+    assert.ok(front.includes(`model: ${MODELS[name]}`), `${name}: model: ${MODELS[name]}`);
+    if (name === 'grilling') continue;
+    const model = MODELS[name][0].toUpperCase() + MODELS[name].slice(1);
+    assert.ok(readme.includes(`| ${name} | ${model} |`), `${name}: the README table names ${model}`);
+  }
+  assert.ok(readme.includes('**One full run costs about $'));
+});
+
+test('every subagent dispatch names its model, and the stack stage never asks the owner for one', () => {
+  let dispatches = 0;
+  for (const name of SKILLS) {
+    const { body } = splitFront(read(`skills/${name}/SKILL.md`));
+    for (const line of body.split('\n').filter((l) => /dispatch (a|one|two) subagents?/i.test(l))) {
+      assert.match(line, /`model: (opus|sonnet|haiku|fable)`/, `${name}: a dispatch names its model: ${line.slice(0, 80)}`);
+      dispatches++;
+    }
+  }
+  assert.equal(dispatches, 4, 'the brainstorm attack, the stack pair, the ledger challenger and the grilling lookup');
+  const { body } = splitFront(read('skills/stack/SKILL.md'));
+  assert.ok(body.includes('Never ask the owner which model a subagent runs on'));
 });
 
 test('each later stage skill checks its gates before anything else', () => {

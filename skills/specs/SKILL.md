@@ -1,6 +1,7 @@
 ---
 name: specs
 description: Stage 3 of idea-to-issues. Turns an approved docs/blueprint.md into one docs/specs/<epic>.md per epic, with measurable acceptance criteria, a slice table, a coverage table and [KEY-N] ticket blocks, and ends when i2i check passes with zero findings. Use for "specs", "acceptance criteria", the "ticket breakdown" of an approved blueprint, or /idea-to-issues:specs.
+model: opus
 ---
 
 # Specs (stage 3)
