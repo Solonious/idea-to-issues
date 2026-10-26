@@ -1,27 +1,15 @@
 # Blueprint: <product name>
 
-Concept: `docs/CONCEPT.md`
-
-## Stack
-
-<!-- Fixed by the plugin and not reopened here. Name the ADR behind anything the stack leaves open. -->
-
-| Part | Technology | Runs on |
-|---|---|---|
-| Monorepo | Nx | — |
-| Web app | Angular | Vercel |
-| API | NestJS | Railway |
-| Data access | Prisma | — |
-| Database | <engine> ([0001](adr/0001-<slug>.md)) | Railway |
+Concept: `docs/CONCEPT.md` · Stack: `docs/stack.md` · Design: `docs/design/index.md`
 
 ## Architecture
 
-<!-- The deployed parts and what calls what. The gate page draws this block. -->
+<!-- One node per running part of docs/stack.md (the web app, the API, the database; a runtime service row only when a module calls it), each labelled with the Chosen: value of its row; the placeholders name the category. A part on the exclusion ledger has no node. Never a technology that is not a Chosen: line. The gate page draws this block. -->
 
 ```mermaid
 flowchart LR
-  web["Web app (Angular, Vercel)"] --> api["API (NestJS, Railway)"]
-  api --> db[("Database (Railway)")]
+  web["Web app (<web-framework>, <web-hosting>)"] --> api["API (<api-framework>, <api-hosting>)"]
+  api --> db[("<database-engine> (<database-hosting>)")]
 ```
 
 ## Domain model
@@ -34,7 +22,7 @@ flowchart LR
 
 ## Modules
 
-<!-- The Nx projects and the NestJS and Angular modules inside them. -->
+<!-- One project per running part of the stack (inside the monorepo when docs/stack.md has that row), and the modules inside each. -->
 
 | Module | Project | Owns | Depends on |
 |---|---|---|---|
@@ -48,17 +36,19 @@ flowchart LR
 
 ## Screens
 
-| Screen | Purpose | Calls |
-|---|---|---|
-| <screen> | <one line> | <endpoints> |
+<!-- One row per row of ## Inventory in docs/design/index.md, in its order: the same Screen and the same Id, none added and none dropped; this document adds only what each screen calls. In the no-UI form, this section is the design's one line, No screens: ui-library excluded by Ruling N, and no table. -->
+
+| Screen | Id | Purpose | Calls |
+|---|---|---|---|
+| <screen> | `<screen-id>` | <one line> | <endpoints> |
 
 ## Decisions
 
-<!-- One row per ADR. This line is what gate 2 approves: the digest covers this document, not docs/adr/. -->
+<!-- One row per ADR written at this stage, numbered after the highest NNNN already in docs/adr/; the stack stage's ADRs are approved at the stack gate and are not repeated here. This line is what gate 2 approves: the digest covers this document, not docs/adr/. -->
 
 | ADR | Decision |
 |---|---|
-| [0001](adr/0001-<slug>.md) | <the decision in one line> |
+| [NNNN](adr/NNNN-<slug>.md) | <the decision in one line> |
 
 ## Epics
 
@@ -66,7 +56,7 @@ flowchart LR
 
 | # | Key | Epic | Delivers |
 |---|---|---|---|
-| 1 | <KEY> | Walking skeleton: <title> | <one real user action, deployed end to end through every part> |
+| 1 | <KEY> | Walking skeleton: <title> | <one real user action, deployed end to end through every running part of the stack> |
 | 2 | <KEY> | <title> | <one line> |
 
 ## Open threads
