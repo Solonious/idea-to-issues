@@ -489,7 +489,7 @@ The design stage writes a folder, `docs/design/`, and pins all of it at once. `d
 
 - `docs/design/prototype.html`: the only prototype, a single self-contained file.
 - `docs/design/directions/<slug>.html`: one file per direction drawn before the prototype, the root element marked `data-direction="<slug>"`, never a `data-screen`. Rejected directions stay.
-- `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-id>-desktop.png`: one pair per screen, in its filled state, at 390×844 and 1440×900, cut at the viewport height (a full-page capture is out of scope). `i2i design shots [<dir>]` writes them.
+- `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-id>-desktop.png`: one pair per screen, in its filled state, at 390×844 and 1440×900 (viewport set exactly, device scale 1, rendered with `prefers-color-scheme: light` whatever the system theme), cut at the viewport height (a full-page capture is out of scope). `i2i design shots [<dir>]` writes them.
 - `docs/design/index.md`: the gate document.
 
 ## Attributes

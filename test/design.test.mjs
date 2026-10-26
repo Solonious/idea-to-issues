@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, realpathSync, mkdirSync, readFileSync, writeFi
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { screenIds } from '../bin/lib/design.mjs';
+import { SIZES, screenIds } from '../bin/lib/design.mjs';
 
 const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const STUB = fileURLToPath(new URL('./stub-chrome/chrome', import.meta.url));
@@ -25,7 +25,17 @@ function shots(ctx, args, extra = {}) {
   return spawnSync(process.execPath, [BIN, 'design', ...args], { cwd: ctx.tmp, env, encoding: 'utf8' });
 }
 
-const logged = (ctx) => (existsSync(ctx.log) ? readFileSync(ctx.log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
+// The stub's log as one { argv, methods } per Chrome launch: an {argv} line starts a call, method lines belong to it.
+function logged(ctx) {
+  if (!existsSync(ctx.log)) return [];
+  const calls = [];
+  for (const line of readFileSync(ctx.log, 'utf8').trim().split('\n')) {
+    const entry = JSON.parse(line);
+    if (entry.argv) calls.push({ argv: entry.argv, methods: [] });
+    else calls.at(-1).methods.push(entry);
+  }
+  return calls;
+}
 
 test('design shots takes one headless shot per screen and width, then removes its profile', (t) => {
   const ctx = setup(t);
@@ -34,16 +44,31 @@ test('design shots takes one headless shot per screen and width, then removes it
   const calls = logged(ctx);
   assert.equal(calls.length, 4);
   const profiles = new Set();
-  for (const argv of calls) {
+  const seen = [];
+  for (const { argv, methods } of calls) {
     assert.ok(argv.includes('--headless'));
+    assert.ok(argv.includes('--remote-debugging-pipe'));
     const profile = argv.filter((a) => a.startsWith('--user-data-dir='));
     assert.equal(profile.length, 1);
     profiles.add(profile[0].slice('--user-data-dir='.length));
-    assert.equal(argv.filter((a) => a === '--window-size=390,844' || a === '--window-size=1440,900').length, 1);
-    const shot = argv.find((a) => a.startsWith('--screenshot='));
-    assert.match(shot, new RegExp(`^--screenshot=${join(ctx.tmp, 'design/png').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(home|plant)-(mobile|desktop)\\.png$`));
-    assert.match(argv.at(-1), /\/design\/prototype\.html#(home|plant)$/);
+    assert.equal(argv.filter((a) => a.startsWith('--window-size=') || a.startsWith('--screenshot=')).length, 0);
+    const names = methods.map((m) => m.method);
+    const metrics = methods.find((m) => m.method === 'Emulation.setDeviceMetricsOverride');
+    const size = Object.entries(SIZES).find(([, [width, height]]) => metrics?.params.width === width && metrics.params.height === height);
+    assert.ok(size, 'the viewport is one of SIZES');
+    assert.deepEqual(metrics.params, { width: size[1][0], height: size[1][1], deviceScaleFactor: 1, mobile: false });
+    const media = methods.find((m) => m.method === 'Emulation.setEmulatedMedia');
+    assert.deepEqual(media?.params.features, [{ name: 'prefers-color-scheme', value: 'light' }]);
+    const navigate = names.indexOf('Page.navigate');
+    assert.ok(navigate !== -1);
+    assert.ok(names.indexOf('Emulation.setDeviceMetricsOverride') < navigate, 'viewport is set before navigating');
+    assert.ok(names.indexOf('Emulation.setEmulatedMedia') < navigate, 'theme is set before navigating');
+    assert.ok(names.indexOf('Page.captureScreenshot') > navigate, 'capture comes after navigating');
+    const url = methods[navigate].params.url;
+    assert.match(url, /\/design\/prototype\.html#(home|plant)$/);
+    seen.push(`${url.split('#')[1]} ${size[0]}`);
   }
+  assert.deepEqual(seen.sort(), ['home desktop', 'home mobile', 'plant desktop', 'plant mobile']);
   for (const f of ['home-mobile', 'home-desktop', 'plant-mobile', 'plant-desktop']) assert.ok(existsSync(join(ctx.tmp, 'design/png', `${f}.png`)), f);
   assert.match(r.stdout, /^design shots: 2 screens, 4 files$/m);
   assert.match(r.stdout, /^ {2}design\/png\/home-mobile\.png$/m);
@@ -80,6 +105,14 @@ test('design shots stops at the first failed shot and quotes Chrome', (t) => {
   assert.equal(r.status, 1);
   assert.match(r.stderr, /screenshot of home at mobile failed: stub chrome: injected failure/);
   assert.equal(logged(ctx).length, 1);
+});
+
+test('design shots reports a protocol error and writes no screenshot', (t) => {
+  const ctx = setup(t);
+  const r = shots(ctx, ['shots', 'design'], { CHROME_STUB_ERROR: 'Page.navigate' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /screenshot of home at mobile failed: .*injected Page\.navigate error/);
+  assert.equal(existsSync(join(ctx.tmp, 'design/png/home-mobile.png')), false);
 });
 
 test('design usage errors exit 2', (t) => {

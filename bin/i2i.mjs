@@ -116,13 +116,13 @@ function runStackCheck(args, usage) {
   return 0;
 }
 
-function runDesign(args) {
+async function runDesign(args) {
   const [action, dir = 'docs/design', ...extra] = args;
   if (action !== 'shots' || extra.length > 0 || dir.startsWith('--')) {
     process.stderr.write('Usage: i2i design shots [<dir>]\n');
     return 2;
   }
-  const { code, files, screens, problems } = shots(dir);
+  const { code, files, screens, problems } = await shots(dir);
   if (code === 0) {
     process.stdout.write(files.map((f) => `  ${f}\n`).join('') + `design shots: ${screens} screens, ${files.length} files\n`);
     return 0;
@@ -335,4 +335,4 @@ function main(argv) {
   return runVerify(argv.slice(1));
 }
 
-process.exitCode = main(process.argv.slice(2));
+process.exitCode = await main(process.argv.slice(2));
