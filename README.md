@@ -129,7 +129,7 @@ One zero-dependency Node tool with six modes:
 | `verify [--wait] [--interval <s>] [--timeout <s>]` | compares the approved spec blocks with what GitHub holds |
 | `gate stamp \| require` | writes and checks the approval front matter |
 | `stack defaults [<category>…] \| check [<dir>]` | prints each stack category's default, question and research for the stack stage, or checks `docs/stack.md` against `docs/CONCEPT.md` |
-| `design shots [<dir>]` | screenshots every `data-screen` of `docs/design/prototype.html` at 390×844 and 1440×900 into `docs/design/png/`; finds Chrome through `I2I_CHROME` or the default locations |
+| `design shots [<dir>]` | screenshots every `data-screen` of `docs/design/prototype.html` at 390×844 and 1440×900 in the light theme into `docs/design/png/`; finds Chrome through `I2I_CHROME` or the default locations |
 
 Run `node bin/i2i.mjs --help` for the usage.
 

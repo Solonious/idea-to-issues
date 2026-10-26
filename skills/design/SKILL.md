@@ -65,7 +65,7 @@ Run this once `docs/design/prototype.html` is final:
 i2i.mjs design shots
 ```
 
-It writes `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-id>-desktop.png` for every `data-screen`; list them in `## Screenshots` of `docs/design/index.md`. If it exits 2 with "no Chrome found", show the list it printed, ask the owner for Chrome or for `I2I_CHROME=<path>`, and wait. If Chrome aborts inside the sandbox (`Failed to bind() … SingletonSocket: Operation not permitted`), give the owner one step, once: `/sandbox exclude` for the `i2i.mjs design shots` prefix, or `! <the exact command>`; then wait. A browser tool may replace the command when one is available, but the files and their names must match the contract.
+It writes `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-id>-desktop.png` for every `data-screen`; list them in `## Screenshots` of `docs/design/index.md`. If it exits 2 with "no Chrome found", show the list it printed, ask the owner for Chrome or for `I2I_CHROME=<path>`, and wait. If Chrome aborts inside the sandbox (`Failed to bind() … SingletonSocket: Operation not permitted`), give the owner one step, once: `/sandbox exclude` for the `i2i.mjs design shots` prefix, or `! <the exact command>`; then wait. A browser tool may replace the command when one is available, but the files, their names, the viewport sizes at scale 1 and the light theme must match the contract.
 
 Run it once, when the HTML is final, and again only after the HTML changes during review. Never run it after the approval without a revision: a fresh run changes the PNG bytes and dirties the pinned folder. Never hand off without the PNGs, except in the no-UI form.
 
