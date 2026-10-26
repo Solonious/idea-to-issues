@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -203,11 +203,39 @@ test('after a refusal, each later stage waits for a new invocation of itself', (
   }
 });
 
-test('the blueprint skill builds on the fixed stack', () => {
-  const { body } = splitFront(read('skills/blueprint/SKILL.md'));
-  for (const word of ['Nx', 'Angular', 'NestJS', 'Prisma', 'Vercel', 'Railway']) {
-    assert.ok(body.includes(word), `mentions ${word}`);
+test('the blueprint builds on the approved stack and design and names no stack of its own', () => {
+  const skill = read('skills/blueprint/SKILL.md');
+  assert.doesNotMatch(skill, /Nx|Angular|NestJS|Prisma|Vercel|Railway/, 'no technology is named, front matter included');
+  const { body } = splitFront(skill);
+  const step2 = body.slice(body.indexOf('## Step 2'), body.indexOf('## Step 3'));
+  for (const doc of ['docs/stack.md', 'docs/design/index.md', 'docs/adr/']) assert.ok(step2.includes(`\`${doc}\``), `step 2 reads ${doc}`);
+  for (const needle of [
+    'every technology this document names is the `Chosen:` line of one of its rows',
+    'Never add a layer, never swap one',
+    'settled by the stack stage — run /idea-to-issues:stack',
+    'with the same Screen and the same Id, none added and none dropped',
+    'No screens: ui-library excluded by Ruling N',
+    'numbered after the highest `NNNN` already in `docs/adr/` (`0001` when the directory is empty or missing)',
+    'A technology is never an ADR here',
+    "Never change `docs/CONCEPT.md`, `docs/stack.md`, `docs/design/` or an existing ADR's body",
+  ]) assert.ok(body.includes(needle), needle);
+  const readme = read('README.md');
+  assert.ok(readme.includes('It reads `docs/stack.md` and `docs/design/index.md`'));
+  assert.ok(!readme.includes('### The fixed stack'));
+});
+
+test('no file of the plugin calls the stack fixed', () => {
+  // test/fixtures/gh/issue-list.json is a verbatim gh capture; issue #10's title is GitHub's record, not the plugin's words.
+  // test/skills.test.mjs holds the pattern's own literals (this test and the blueprint test above), so it would match itself.
+  const files = ['README.md'];
+  for (const dir of ['skills', 'commands', 'bin', 'docs', 'evals', '.claude-plugin', 'test']) {
+    for (const f of readdirSync(path(dir), { recursive: true })) {
+      if (dir === 'test' && (f === 'skills.test.mjs' || f === 'fixtures/gh/issue-list.json')) continue;
+      if (/\.(md|mjs|json|yaml|sh)$/.test(f)) files.push(`${dir}/${f}`);
+    }
   }
+  assert.ok(files.length > 20, `${files.length} files scanned`);
+  for (const f of files) assert.doesNotMatch(read(f), /fixed[ -]stack|stack is fixed|fixed by the plugin/i, f);
 });
 
 test('the blueprint gate falls back to a markdown summary without the Artifact tool', () => {
@@ -216,12 +244,17 @@ test('the blueprint gate falls back to a markdown summary without the Artifact t
   assert.ok(body.includes('markdown summary'));
 });
 
-test('the blueprint template has its sections in order, a mermaid diagram and the walking skeleton first', () => {
-  const lines = read('skills/blueprint/references/blueprint-template.md').split('\n');
+test('the blueprint template points at the stack and design, has its sections in order, screen ids, a mermaid diagram and the walking skeleton first', () => {
+  const text = read('skills/blueprint/references/blueprint-template.md');
+  const lines = text.split('\n');
   assert.notEqual(lines[0], '---');
   assert.ok(lines[0].startsWith('# Blueprint'));
+  assert.equal(lines[2], 'Concept: `docs/CONCEPT.md` · Stack: `docs/stack.md` · Design: `docs/design/index.md`');
   const headings = lines.filter((l) => l.startsWith('## ')).map((l) => l.slice(3));
-  assert.deepEqual(headings, ['Stack', 'Architecture', 'Domain model', 'Modules', 'API surface', 'Screens', 'Decisions', 'Epics', 'Open threads']);
+  assert.deepEqual(headings, ['Architecture', 'Domain model', 'Modules', 'API surface', 'Screens', 'Decisions', 'Epics', 'Open threads']);
+  assert.ok(lines.includes('| Screen | Id | Purpose | Calls |'));
+  assert.ok(lines.includes('| [NNNN](adr/NNNN-<slug>.md) | <the decision in one line> |'));
+  assert.doesNotMatch(text, /0001|Nx|Angular|NestJS|Prisma|Vercel|Railway/);
   assert.ok(lines.includes('```mermaid'));
   const head = lines.indexOf('| # | Key | Epic | Delivers |');
   assert.ok(head >= 0);

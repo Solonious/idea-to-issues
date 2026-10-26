@@ -4,7 +4,7 @@ Status: Accepted
 
 ## Context
 
-<!-- What the concept needs, what the fixed stack leaves open, and the constraints. -->
+<!-- What the concept needs (cite Ruling N), the rows of docs/stack.md and the screens of docs/design/index.md this builds on, and the constraints. A technology is never decided here. -->
 
 ## Decision
 
