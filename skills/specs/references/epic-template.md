@@ -41,7 +41,7 @@ effort: S · blocked-by: none · covers: AC-1
 
 #### Proposed solution
 
-<What to build through every part the slice touches, named from the blueprint's modules, API surface and screens.>
+<What to build through every part the slice touches, named from the blueprint's modules, API surface and screens, a screen by its backticked Id.>
 
 #### Affected areas
 
@@ -69,6 +69,10 @@ None.
 
 #### Notes for implementer
 
+<!-- One Prototype: line per screen the slice builds or changes, first, with the Id from the blueprint's Screens table; none when the slice touches no screen, and none in the no-UI form. -->
+
+Prototype: `docs/design/prototype.html#<screen-id>` — reference for layout and behaviour, not source code.
+
 <The blueprint decisions and ADRs this slice must not reopen.>
 
 ### [KEY-2] <slice title>
@@ -81,7 +85,7 @@ effort: M · blocked-by: KEY-1 · covers: AC-2
 
 #### Proposed solution
 
-<What to build through every part the slice touches, named from the blueprint's modules, API surface and screens.>
+<What to build through every part the slice touches, named from the blueprint's modules, API surface and screens, a screen by its backticked Id.>
 
 #### Affected areas
 

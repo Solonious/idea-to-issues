@@ -283,6 +283,23 @@ test('the specs skill never splits by layer and leaves measurability to the agen
   assert.ok(body.includes('measurable'));
 });
 
+test('the specs skill cites the approved prototype in every screen ticket and reviews it before the hand-off', () => {
+  const { body } = splitFront(read('skills/specs/SKILL.md'));
+  const step2 = body.slice(body.indexOf('## Step 2'), body.indexOf('## Step 3'));
+  assert.ok(step2.includes('`docs/design/index.md`'), 'step 2 reads the design inventory');
+  assert.ok(step2.includes('No screens: ui-library excluded by Ruling N'), 'step 2 names the no-UI form');
+  const line = 'Prototype: `docs/design/prototype.html#<screen-id>` — reference for layout and behaviour, not source code.';
+  const step6 = body.slice(body.indexOf('## Step 6'), body.indexOf('## Step 7'));
+  assert.ok(step6.includes(line), 'step 6 fixes the citation line');
+  assert.ok(step6.includes('in backticks'), 'a screen is named by its backticked Id');
+  const review = body.slice(body.indexOf('## Step 7: Run check'), body.indexOf('## Step 8: Hand off'));
+  assert.ok(review.includes('`Prototype:`') && review.includes('reference for layout and behaviour, not source code'), 'the step 7 review checks the citation');
+  assert.ok(body.includes('never change `docs/CONCEPT.md`, `docs/blueprint.md`, `docs/design/` or `docs/adr/`'), 'the design is never changed here');
+  const template = read('skills/specs/references/epic-template.md');
+  assert.ok(template.includes(line), 'the template shows the citation line');
+  assert.ok(template.includes('a screen by its backticked Id'), 'the template names a screen by its Id');
+});
+
 test('the epic template passes check as it is', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'i2i-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
