@@ -443,6 +443,7 @@ test('the design skill grills the inventory, keeps the directions, shoots the PN
   const { body } = splitFront(read('skills/design/SKILL.md'));
   for (const needle of [
     'i2i.mjs design shots',
+    'i2i.mjs design check',
     'data-direction',
     'never draw a direction yourself',
     'one question at a time',
@@ -458,7 +459,18 @@ test('the design skill grills the inventory, keeps the directions, shoots the PN
   ]) assert.ok(body.includes(needle), needle);
   const at = (h) => body.indexOf(h);
   assert.ok(at('## Step 5: Directions') >= 0 && at('## Step 5: Directions') < at('## Step 6: Build'));
-  assert.ok(at('## Step 8: Screenshots') >= 0 && at('## Step 8: Screenshots') < at('## Step 9: Present the design gate'));
+  assert.ok(at('## Step 8: Screenshots') >= 0 && at('## Step 8: Screenshots') < at('## Step 9: Run the design check'));
+  assert.ok(at('## Step 9: Run the design check') < at('## Step 10: Present the design gate'));
+});
+
+test('the design skill runs the design check after the screenshots and before the gate page', () => {
+  const { body } = splitFront(read('skills/design/SKILL.md'));
+  assert.ok(body.includes('i2i.mjs design check'));
+  const at = (h) => body.indexOf(h);
+  assert.ok(at('## Step 8: Screenshots') < at('## Step 9: Run the design check'));
+  assert.ok(at('## Step 9: Run the design check') < at('## Step 10: Present the design gate'));
+  assert.ok(at('## Step 10: Present the design gate') < at('## Step 11: Hand off to the design gate'));
+  assert.ok(body.includes('Never build the gate page while a finding is left'));
 });
 
 test('the design index template has its sections in order and no front matter', () => {

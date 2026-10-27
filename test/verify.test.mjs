@@ -10,7 +10,7 @@ const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const STUB = fileURLToPath(new URL('./stub-gh', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url));
 const DESIGN_INDEX = '# Design: Plants\n\n## Inventory\n\n| Screen | Id | Basis | Purpose |\n|---|---|---|---|\n| Home | `home` | Ruling 6 | the plant list |\n';
-const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>\n';
+const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="empty"></div><div data-state="filled">Plants</div><div data-state="error"></div></section></body></html>\n';
 // A real `gh issue list --state all --json number,title,parent,blockedBy,projectItems` of this repository,
 // so the stub cannot drift from what gh returns. Its [CORE] issues are the graph of fixtures/core.
 const CAPTURE = join(FIXTURES, 'gh/issue-list.json');

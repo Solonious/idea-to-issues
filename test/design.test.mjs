@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, realpathSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, realpathSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SIZES, screenIds } from '../bin/lib/design.mjs';
+import { SIZES, screenIds, parsePrototype } from '../bin/lib/design.mjs';
 
 const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const STUB = fileURLToPath(new URL('./stub-chrome/chrome', import.meta.url));
@@ -124,4 +124,131 @@ test('design usage errors exit 2', (t) => {
 
 test('screenIds returns the unique data-screen values in document order', () => {
   assert.deepEqual(screenIds(PROTOTYPE), ['home', 'plant']);
+});
+
+test('parsePrototype reads the tags, not the comments, scripts and styles, and keeps real line numbers', () => {
+  const html = '<style>[data-screen="s"] {}</style>\n<!-- <p data-screen="c"> -->\n<section data-screen="a">\n<div data-state="empty"><br><img src="x"></div>\n<script>var x = \'<b data-state="no">\';</script>\n</section>\n<p data-state="filled" data-to="a/empty"></p>';
+  assert.deepEqual(parsePrototype(html), {
+    screens: [{ id: 'a', line: 3, states: [{ name: 'empty', line: 4 }] }],
+    transitions: [{ to: 'a/empty', line: 7 }],
+    loose: [{ name: 'filled', line: 7 }],
+  });
+});
+
+const FIXTURES = fileURLToPath(new URL('./fixtures/design', import.meta.url));
+const CONTRACT = fileURLToPath(new URL('../docs/CONTRACT.md', import.meta.url));
+
+function check(...args) {
+  return spawnSync(process.execPath, [BIN, 'design', 'check', ...args], { encoding: 'utf8' });
+}
+
+function tempDir(t) {
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'i2i-design-check-')));
+  t.after(() => rmSync(tmp, { recursive: true, force: true }));
+  return tmp;
+}
+
+// A copy of fixtures/design/valid in a temp dir, with each file passed through its edit function.
+function mutated(t, { index = (x) => x, html = (x) => x } = {}) {
+  const tmp = tempDir(t);
+  writeFileSync(join(tmp, 'index.md'), index(readFileSync(join(FIXTURES, 'valid', 'index.md'), 'utf8')));
+  writeFileSync(join(tmp, 'prototype.html'), html(readFileSync(join(FIXTURES, 'valid', 'prototype.html'), 'utf8')));
+  return tmp;
+}
+
+// Replaces `from` with `to`, and fails the test when `from` is not there.
+const swap = (from, to) => (text) => {
+  assert.ok(text.includes(from), `no ${from} in the fixture`);
+  return text.replace(from, to);
+};
+const PLANT_ROW = '| Plant | `plant` | Ruling 6 | one plant |\n';
+const BACK_ROW = '| `plant` | `home` | Back |\n';
+const THREE = '<div data-state="empty"></div><div data-state="filled"></div><div data-state="error"></div>';
+
+test('design check passes the valid fixture', () => {
+  const { status, stdout, stderr } = check(join(FIXTURES, 'valid'));
+  assert.equal(status, 0, stderr);
+  assert.equal(stderr, '');
+  assert.match(stdout, /^design check: 2 screens, 2 transitions, 0 findings$/m);
+});
+
+test('design check passes the no-UI fixture', () => {
+  const { status, stdout, stderr } = check(join(FIXTURES, 'no-ui'));
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /^design check: no screens \(ui-library excluded by Ruling 6\), 0 findings$/m);
+});
+
+test("design check skips an approved index.md's front matter", (t) => {
+  const front = '---\napproved: 2026-01-01\ndigest: sha256:0\nbased-on: docs/design@0000000\n---\n';
+  const { status, stderr } = check(mutated(t, { index: (x) => front + x }));
+  assert.equal(status, 0, stderr);
+});
+
+const RULES = [
+  ['screen-not-in-prototype', 'settings', { index: swap(PLANT_ROW, PLANT_ROW + '| Settings | `settings` | Ruling 6 | x |\n') }],
+  ['screen-not-in-index', 'settings', { html: swap('</body>', `<section data-screen="settings">${THREE}</section></body>`) }],
+  ['missing-state', 'plant/error', { html: swap('  <div data-state="error">The plant did not load</div>\n', '') }],
+  ['bad-transition-target', 'settings', { html: swap('data-to="plant"', 'data-to="settings"') }],
+  ['bad-transition-target', 'plant/open', { html: swap('data-to="home/filled"', 'data-to="plant/open"') }],
+  ['duplicate-screen', 'home', { html: swap('</body>', '<section data-screen="home"></section></body>') }],
+  ['duplicate-state', 'home/filled', { html: swap('  <div data-state="error">The list did not load</div>\n', '  <div data-state="filled"></div>\n  <div data-state="error">The list did not load</div>\n') }],
+  ['bad-state', 'home/loading', { html: swap('  <a data-to="plant">', '  <div data-state="loading"></div>\n  <a data-to="plant">') }],
+  ['bad-state', 'empty', { html: swap('<section data-screen="home">', '<div data-state="empty"></div>\n<section data-screen="home">') }],
+  ['bad-screen-id', 'Home2', { html: swap('</body>', '<section data-screen="Home2"></section></body>') }],
+  ['bad-screen-id', 'settings', { index: swap(PLANT_ROW, PLANT_ROW + '| Settings | settings | Ruling 6 | x |\n') }],
+  ['unknown-screen', 'settings', { index: swap(BACK_ROW, BACK_ROW + '| `home` | `settings` | tap |\n') }],
+  [
+    'no-screens',
+    'inventory',
+    {
+      index: (x) => x.replace(/^\| (Home|Plant) \| `.*\n/gm, '').replace(/^\| `(home|plant)` \| `.*\n/gm, ''),
+      html: (x) => x.replace(/<section data-screen[\s\S]*?<\/section>\n/g, ''),
+    },
+  ],
+];
+
+for (const [rule, key, edits] of RULES) {
+  test(`design check reports ${rule} [${key}] and only it`, (t) => {
+    const { status, stdout, stderr } = check(mutated(t, edits));
+    assert.equal(status, 1, stderr);
+    assert.equal(stdout, '');
+    assert.ok(stderr.includes(` [${key}] ${rule}: `), stderr);
+    assert.match(stderr, /^design check: 1 finding\(s\)$/m);
+  });
+}
+
+test('design check reports stray-prototype in the no-UI form', (t) => {
+  const tmp = tempDir(t);
+  copyFileSync(join(FIXTURES, 'no-ui', 'index.md'), join(tmp, 'index.md'));
+  writeFileSync(join(tmp, 'prototype.html'), '<html></html>');
+  const { status, stderr } = check(tmp);
+  assert.equal(status, 1, stderr);
+  assert.ok(stderr.includes('[prototype.html] stray-prototype:'), stderr);
+});
+
+test('design check usage and missing files exit 2', (t) => {
+  for (const args of [['a', 'b'], ['--x']]) {
+    const r = check(...args);
+    assert.equal(r.status, 2, args.join(' '));
+    assert.match(r.stderr, /^Usage: i2i design shots/);
+  }
+  const empty = check(tempDir(t));
+  assert.equal(empty.status, 2);
+  assert.match(empty.stderr, /index\.md does not exist/);
+  const tmp = tempDir(t);
+  copyFileSync(join(FIXTURES, 'valid', 'index.md'), join(tmp, 'index.md'));
+  const noHtml = check(tmp);
+  assert.equal(noHtml.status, 2);
+  assert.match(noHtml.stderr, /prototype\.html does not exist/);
+});
+
+test('the design example in docs/CONTRACT.md passes design check', (t) => {
+  const tmp = tempDir(t);
+  const files = [...readFileSync(CONTRACT, 'utf8').matchAll(/^````(?:markdown|html) (docs\/design\/\S+)\n([\s\S]*?)\n````$/gm)];
+  assert.equal(files.length, 2);
+  mkdirSync(join(tmp, 'docs/design'), { recursive: true });
+  for (const [, name, content] of files) writeFileSync(join(tmp, name), content + '\n');
+  const { status, stdout, stderr } = check(join(tmp, 'docs/design'));
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /0 findings$/m);
 });

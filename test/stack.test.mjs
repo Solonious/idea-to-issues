@@ -151,7 +151,7 @@ test('stack check usage and missing files exit 2', (t) => {
 
 test('the stack example in docs/CONTRACT.md passes stack check', (t) => {
   const tmp = tempDir(t);
-  const files = [...readFileSync(CONTRACT, 'utf8').matchAll(/^````markdown (\S+\.md)\n([\s\S]*?)\n````$/gm)].filter((f) => f[1].startsWith('docs/'));
+  const files = [...readFileSync(CONTRACT, 'utf8').matchAll(/^````markdown (\S+\.md)\n([\s\S]*?)\n````$/gm)].filter((f) => f[1] === 'docs/CONCEPT.md' || f[1] === 'docs/stack.md');
   assert.equal(files.length, 2);
   mkdirSync(join(tmp, 'docs'));
   for (const [, name, content] of files) writeFileSync(join(tmp, name), content + '\n');

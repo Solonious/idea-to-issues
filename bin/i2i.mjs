@@ -8,7 +8,7 @@ import { renderDefaults, parseRulings, checkStack } from './lib/stack.mjs';
 import { planFile, describe, perform } from './lib/file.mjs';
 import { readIssues } from './lib/github.mjs';
 import { verifyIssues, formatDefect, waitSettled } from './lib/verify.mjs';
-import { shots } from './lib/design.mjs';
+import { shots, checkDesign } from './lib/design.mjs';
 
 const MODES = {
   check: { usage: 'check [--render] <dir>', summary: 'validate the spec blocks before gate 3' },
@@ -16,7 +16,7 @@ const MODES = {
   verify: { usage: 'verify [--wait] [--interval <s>] [--timeout <s>]', summary: 'compare the approved spec blocks with what GitHub holds' },
   gate: { usage: 'gate stamp <doc> | require <stage>', summary: 'write and check the approval front matter' },
   stack: { usage: 'stack defaults [<category>…] | check [<dir>]', summary: 'print the research behind each stack category, or check docs/stack.md against docs/CONCEPT.md' },
-  design: { usage: 'design shots [<dir>]', summary: 'screenshot every data-screen of docs/design/prototype.html at mobile and desktop widths' },
+  design: { usage: 'design shots [<dir>] | check [<dir>]', summary: 'screenshot every data-screen of docs/design/prototype.html at mobile and desktop widths, or check docs/design/index.md against the prototype' },
 };
 
 // Seconds between two --wait polls, and the most --wait spends before it gives up.
@@ -118,10 +118,11 @@ function runStackCheck(args, usage) {
 
 async function runDesign(args) {
   const [action, dir = 'docs/design', ...extra] = args;
-  if (action !== 'shots' || extra.length > 0 || dir.startsWith('--')) {
-    process.stderr.write('Usage: i2i design shots [<dir>]\n');
+  if (!['shots', 'check'].includes(action) || extra.length > 0 || dir.startsWith('--')) {
+    process.stderr.write('Usage: i2i design shots [<dir>] | check [<dir>]\n');
     return 2;
   }
+  if (action === 'check') return runDesignCheck(dir);
   const { code, files, screens, problems } = await shots(dir);
   if (code === 0) {
     process.stdout.write(files.map((f) => `  ${f}\n`).join('') + `design shots: ${screens} screens, ${files.length} files\n`);
@@ -129,6 +130,20 @@ async function runDesign(args) {
   }
   process.stderr.write(problems.map((p) => `i2i design shots: ${p}\n`).join(''));
   return code;
+}
+
+function runDesignCheck(dir) {
+  const { code, findings, problems, screens, transitions, noUi } = checkDesign(dir);
+  if (code === 2 || (code === 1 && findings.length === 0)) {
+    process.stderr.write(problems.map((p) => `i2i design check: ${p}\n`).join(''));
+    return code;
+  }
+  if (findings.length > 0) {
+    process.stderr.write(findings.map((f) => `${formatFinding(f)}\n`).join('') + `design check: ${findings.length} finding(s)\n`);
+    return 1;
+  }
+  process.stdout.write(noUi ? `design check: no screens (ui-library excluded by Ruling ${noUi.ruling}), 0 findings\n` : `design check: ${screens} screens, ${transitions} transitions, 0 findings\n`);
+  return 0;
 }
 
 function runGate(args) {

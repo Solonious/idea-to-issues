@@ -91,7 +91,7 @@ design_approved() {
 DOC
   write docs/design/prototype.html <<'DOC'
 <!doctype html>
-<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>
+<html><body><section data-screen="home"><div data-state="empty"></div><div data-state="filled">Plants</div><div data-state="error"></div></section></body></html>
 DOC
   commit design
   approve design

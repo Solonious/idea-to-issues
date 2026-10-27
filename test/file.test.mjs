@@ -10,7 +10,7 @@ const BIN = fileURLToPath(new URL('../bin/i2i.mjs', import.meta.url));
 const STUB = fileURLToPath(new URL('./stub-gh', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url));
 const DESIGN_INDEX = '# Design: Plants\n\n## Inventory\n\n| Screen | Id | Basis | Purpose |\n|---|---|---|---|\n| Home | `home` | Ruling 6 | the plant list |\n';
-const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>\n';
+const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="empty"></div><div data-state="filled">Plants</div><div data-state="error"></div></section></body></html>\n';
 const KEYS = ['AUTH', 'BILL', 'AUTH-1', 'AUTH-2', 'AUTH-3', 'BILL-1', 'BILL-2'];
 
 // Git isolated from the user's configuration, so signing or hooks there cannot break a test commit.

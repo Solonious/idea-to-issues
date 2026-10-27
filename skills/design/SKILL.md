@@ -69,7 +69,17 @@ It writes `docs/design/png/<screen-id>-mobile.png` and `docs/design/png/<screen-
 
 Run it once, when the HTML is final, and again only after the HTML changes during review. Never run it after the approval without a revision: a fresh run changes the PNG bytes and dirties the pinned folder. Never hand off without the PNGs, except in the no-UI form.
 
-## Step 9: Present the design gate
+## Step 9: Run the design check
+
+Run this once `docs/design/index.md` and `docs/design/prototype.html` are written, in the no-UI form too:
+
+```bash
+i2i.mjs design check
+```
+
+It checks `docs/design/index.md` against `docs/design/prototype.html` and reports eleven kinds of finding: `bad-screen-id` (an id that is not `[a-z][a-z0-9-]*`), `duplicate-screen` (a `data-screen` id used twice), `no-screens` (an empty inventory outside the no-UI form), `screen-not-in-prototype` (an inventory id with no screen), `screen-not-in-index` (a screen with no inventory row), `missing-state` (a screen without its empty, filled or error state), `duplicate-state` (a state twice in one screen), `bad-state` (a state that is not empty, filled or error, or sits outside a screen), `bad-transition-target` (a `data-to` to a screen or state that does not exist), `unknown-screen` (a screen id in `## Flows` that is not in the inventory) and `stray-prototype` (a prototype next to the no-UI form). Fix every finding in `docs/design/index.md` or `docs/design/prototype.html` and run the check again until it prints `0 findings`; if the fix changed `docs/design/prototype.html`, run Step 8 again. Never build the gate page while a finding is left, and never change the contract or the tool to make a finding go away. The next stage's `gate require` runs the same check and refuses a design that has a finding.
+
+## Step 10: Present the design gate
 
 Build the gate page after the documents are written, from `docs/design/index.md` and nothing else. The page is a view of the markdown: every screen, state, flow, change and direction on it appears in the markdown under the same screen id, `Ruling N` or slug, and the page says that the approval is of the English document `docs/design/index.md`. When the owner asks for a change while reviewing it, change the markdown first, then rebuild the page from it. Nothing is decided only on the page.
 
@@ -80,9 +90,9 @@ In the no-UI form there is no prototype and no PNG: the gate page shows the one 
 - If the Artifact tool is in your tool list, publish two private Artifacts (one in the no-UI form). First the prototype, byte for byte from `docs/design/prototype.html`. Second the gate page: the inventory with its `Ruling N`, the states, the flows, the change list, the directions chosen and rejected with the reasons, the PNGs, and the link to the prototype Artifact. Give the owner both links.
 - If the Artifact tool is not in your tool list, print in the terminal: the paths of `docs/design/index.md` and `docs/design/prototype.html`, the Inventory, Flows, Directions and Change list tables, and the PNG paths. Its headings and explanations are in ${user_config.language}; the tables are copied from the document as they are.
 
-A change the owner asks for during review goes into `docs/design/index.md`, `docs/design/prototype.html` and the PNGs together (run Step 8 again), and then both Artifacts are republished from the files on disk, byte for byte.
+A change the owner asks for during review goes into `docs/design/index.md`, `docs/design/prototype.html` and the PNGs together (run Steps 8 and 9 again), and then both Artifacts are republished from the files on disk, byte for byte.
 
-## Step 10: Hand off to the design gate
+## Step 11: Hand off to the design gate
 
 Show the owner the paths and a short summary, then ask them to commit `docs/design/` in one commit and then run `/idea-to-issues:approve design`. If `git status --porcelain -- docs/design ':(exclude)docs/design/index.md'` prints anything, say that the approval will be refused until those files are committed. Stop there.
 

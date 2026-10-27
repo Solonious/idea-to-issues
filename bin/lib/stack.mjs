@@ -60,7 +60,7 @@ const FENCE_OPEN = /^(`{3,}|~{3,})/;
 
 // The lines of a document that carry content, as `{ line, at }` with `at` the 1-based line number: front
 // matter and fenced code are skipped, the way spec.mjs reads an epic file. An unclosed front matter leaves none.
-function* contentLines(text) {
+export function* contentLines(text) {
   const lines = text.split(/\r?\n/).map((l) => l.trimEnd());
   let i = 0;
   if (lines[0] === '---') {

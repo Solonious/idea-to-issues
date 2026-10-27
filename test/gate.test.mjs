@@ -13,7 +13,7 @@ const CONCEPT = fixture('CONCEPT.md');
 const STACK = fixture('stack.md');
 const BLUEPRINT_BODY = '# Blueprint\n\nOne web app and one API.\n';
 const DESIGN_INDEX = '# Design: Plants\n\n## Inventory\n\n| Screen | Id | Basis | Purpose |\n|---|---|---|---|\n| Home | `home` | Ruling 6 | the plant list |\n';
-const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="filled">Plants</div></section></body></html>\n';
+const PROTOTYPE = '<!doctype html>\n<html><body><section data-screen="home"><div data-state="empty"></div><div data-state="filled">Plants</div><div data-state="error"></div></section></body></html>\n';
 const SUMMARY = '# Brainstorm summary: Plants\n\nA reminder per plant.\n';
 const SHA = /^[0-9a-f]{40}$/;
 
@@ -572,6 +572,35 @@ test('require design refuses while docs/stack.md has findings, and stamp stack d
   r = i2i(repo, 'gate', 'require', 'design');
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /checked brainstorm, concept, stack\)$/m);
+});
+
+test('require blueprint refuses while docs/design has findings, and stamp design does not run the check', (t) => {
+  const { repo } = setup(t, { remote: false });
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE.replace('<div data-state="empty"></div>', ''));
+  commit(repo, 'design');
+  stamp(repo, 'design');
+
+  let r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /^i2i gate: docs\/design\/prototype\.html:\d+: \[home\/empty\] missing-state: /m);
+  assert.match(r.stderr, /revise it with \/idea-to-issues:design/);
+
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  commit(repo, 'design fixed');
+  stamp(repo, 'design');
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /checked brainstorm, concept, stack, design\)$/m);
 });
 
 test('require design fails while the stack is unapproved or edited after its approval', (t) => {

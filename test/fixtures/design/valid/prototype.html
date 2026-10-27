@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Plant reminders</title>
+<style>
+[data-screen] { display: none }
+[data-screen].on { display: block }
+[data-state="empty"] { display: none }
+</style>
+</head>
+<body>
+<!-- <section data-screen="ghost"> is a comment, not a screen -->
+<section data-screen="home">
+  <div data-state="empty">No plants yet</div>
+  <div data-state="filled"><img src="data:," alt=""><br>Plants</div>
+  <div data-state="error">The list did not load</div>
+  <a data-to="plant">Open a plant</a>
+</section>
+<section data-screen="plant">
+  <div data-state="empty">No care history</div>
+  <div data-state="filled">Fern</div>
+  <div data-state="error">The plant did not load</div>
+  <a data-to="home/filled">Back</a>
+</section>
+<script>
+function show(id) {
+  var el = document.querySelector('[data-screen="' + id + '"]');
+  if (el) el.classList.add('on');
+}
+document.addEventListener('click', function (e) {
+  var to = e.target.getAttribute('data-to');
+  if (to) location.hash = to;
+});
+window.addEventListener('load', function () { show(location.hash.slice(1) || 'home'); });
+</script>
+</body>
+</html>
