@@ -22,6 +22,8 @@ If it exits non-zero, show the owner its output verbatim and stop without writin
 
 Read `docs/blueprint.md` in full: the Epics table (keys, with row 1 the walking skeleton), the domain model, modules, API surface, screens, decisions, and the open threads handed to this stage. Its decisions are settled; reopen nothing.
 
+Read `## Inventory` of `docs/design/index.md`: its `Id` column is the `data-screen` id of every approved screen in `docs/design/prototype.html`, and the blueprint's Screens table carries the same ids. In the no-UI form (`No screens: ui-library excluded by Ruling N`) the product has no screens, and no ticket cites the prototype.
+
 Settle every open thread handed to this stage with the two kinds of question from the grilling skill (`/idea-to-issues:grilling`):
 
 - Technical: decide it yourself from evidence.
@@ -66,13 +68,13 @@ effort: S|M|L|XL · blocked-by: KEY-N, … · covers: AC-n, …
 The separator is a middle dot (U+00B7) with a space on each side, lists are separated by `, `, and an empty list is `none`. Then write the eight `####` sections in this order, each once: Problem, Proposed solution, Affected areas, Acceptance criteria, Validation, Dependencies, Risks, Notes for implementer. `file` files these sections as the issue body, so write each for an implementer who has read nothing else.
 
 - Problem: what the user cannot do yet, for this slice only.
-- Proposed solution: named from the blueprint's modules, API surface and screens.
+- Proposed solution: named from the blueprint's modules, API surface and screens. A screen is named by its Id from the blueprint's Screens table, in backticks (`` `home` ``), never by its title alone, so the citation below and the review of step 7 key on one token.
 - Affected areas: the projects, modules and paths that change.
 - Acceptance criteria: one checkbox per covered AC, `- [ ] AC-n: <text>`, plus any check particular to this slice.
 - Validation: a fenced bash block with the real commands.
 - Dependencies: why it waits for its blockers, in prose. Do not write a `⛓ Depends on:` line, because `file` adds it with the issue numbers.
 - Risks: what could go wrong.
-- Notes for implementer: the blueprint decisions it must not reopen.
+- Notes for implementer: first, one line per screen the slice builds or changes, ``Prototype: `docs/design/prototype.html#<screen-id>` — reference for layout and behaviour, not source code.``, with the screen's Id in place of `<screen-id>`: the prototype is what the design gate approved, so the implementer takes its layout and behaviour from it and never its markup. Then the blueprint decisions and ADRs the slice must not reopen. A slice that touches no screen, and every slice in the no-UI form, has no `Prototype:` line.
 
 The contract has no priority field and `file` applies only `effort:` and `epic:` labels, so a ticket carries no priority. Never write P0 or P1 into a ticket: those are for urgent work, and the owner sets them after filing.
 
@@ -91,7 +93,8 @@ Then review what `check` cannot see, epic by epic:
 - every AC is measurable (step 4);
 - the Coverage table matches the `covers` lines, and every AC has a ticket;
 - `KEY-1` is the walking skeleton and no ticket of its own epic blocks it;
-- no ticket is split by layer.
+- no ticket is split by layer;
+- every ticket whose Proposed solution names a screen (a backticked Id of the blueprint's Screens table) opens its Notes for implementer with a `Prototype:` line for that screen, `docs/design/prototype.html#<screen-id>` with the words "reference for layout and behaviour, not source code", and no `Prototype:` line names an Id the Screens table does not have.
 
 Fix what you find, then run `check` again.
 
@@ -101,4 +104,4 @@ Show the owner the epic file paths and the ticket table from `i2i.mjs check --re
 
 ## Never
 
-Never write `docs/specs/index.md`: the tickets stage writes it and gate 3 approves it. Never add front matter to an epic file, never change `docs/CONCEPT.md`, `docs/blueprint.md` or `docs/adr/`, and never run `i2i.mjs gate stamp`. This stage has no approval of its own; `check` is its gate.
+Never write `docs/specs/index.md`: the tickets stage writes it and gate 3 approves it. Never add front matter to an epic file, never change `docs/CONCEPT.md`, `docs/blueprint.md`, `docs/design/` or `docs/adr/`, and never run `i2i.mjs gate stamp`. This stage has no approval of its own; `check` is its gate.
