@@ -6,6 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { formatFinding } from './spec.mjs';
 import { parseRulings, checkStack } from './stack.mjs';
+import { checkDesign } from './design.mjs';
 
 // Every stage in order. A gated stage's document carries the stamp; `file` is not a stage of its own,
 // it names the filing step, which needs gate 3. `prototype`, like `specs`, is the ungated directory a gated stage pins.
@@ -213,6 +214,16 @@ function checkStackDoc(root, problems) {
   problems.push(`${doc} has ${findings.length} finding(s): revise it with /idea-to-issues:stack, then run /idea-to-issues:approve stack again`);
 }
 
+// The design gate's counterpart: docs/design is checked for content once the design gate holds. stamp() never runs it.
+function checkDesignDoc(root, problems) {
+  const dir = STAGES.prototype.doc;
+  const { findings, problems: missing } = checkDesign(dir, { root });
+  for (const p of missing) problems.push(p);
+  if (findings.length === 0) return;
+  for (const f of findings) problems.push(formatFinding(f));
+  problems.push(`${dir} has ${findings.length} finding(s): revise it with /idea-to-issues:design, then run /idea-to-issues:approve design again`);
+}
+
 // May `name` start? Every gated stage before it must be approved, unedited since, and current with what it was based on,
 // every approved document before it included.
 export function requireStage(root, name) {
@@ -223,6 +234,7 @@ export function requireStage(root, name) {
   checkRemote(root, gates, problems, notes);
   for (const gate of gates) checkGate(root, gate, problems);
   if (gates.includes('stack') && problems.length === 0) checkStackDoc(root, problems);
+  if (gates.includes('design') && problems.length === 0) checkDesignDoc(root, problems);
   return { gates, problems, notes };
 }
 

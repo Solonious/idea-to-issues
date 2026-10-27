@@ -483,7 +483,7 @@ Finding: none
 
 # Design document contract
 
-The design stage writes a folder, `docs/design/`, and pins all of it at once. `docs/design/index.md` is the gate document; `gate stamp design` stamps it, and the `based-on` it writes pins `docs/design` without `index.md`, so an edit to any other file there fails the next gate until the design is approved again. There is no checker for this contract yet; the checks for ids both ways, three states per screen and transition targets come with the design check. The blueprint and tickets gates pin the body of `docs/design/index.md` in turn, as every gate pins the body of each approved document before it (README, Gate stamps).
+The design stage writes a folder, `docs/design/`, and pins all of it at once. `docs/design/index.md` is the gate document; `gate stamp design` stamps it, and the `based-on` it writes pins `docs/design` without `index.md`, so an edit to any other file there fails the next gate until the design is approved again. `i2i design check [<dir>]` checks that `index.md` and `prototype.html` agree (The design check, below). The blueprint and tickets gates pin the body of `docs/design/index.md` in turn, as every gate pins the body of each approved document before it (README, Gate stamps).
 
 ## Layout
 
@@ -550,3 +550,117 @@ When `ui-library` is on the exclusion ledger of `docs/stack.md`, `index.md` is `
 
 No screens: ui-library excluded by Ruling 6
 ```
+
+## The design check
+
+`i2i design check [<dir>]` reads `<dir>/index.md` and `<dir>/prototype.html` (`<dir>` defaults to `docs/design`) and reports findings in the same shape as `check`: `<file>:<line>: [<key>] <rule>: <message>`. A leading front matter block of `index.md` is skipped and line numbers stay real. In the prototype the ids are read from the attributes of the tags: `<!-- -->` comments and `<script>` and `<style>` bodies are opaque, and a `data-state` belongs to the nearest enclosing `data-screen` element. The Inventory ids are the backticked ids in the second column of `## Inventory`; `## Flows` is read for the backticked ids in its first two columns.
+
+| Rule | Meaning |
+|---|---|
+| `bad-screen-id` | An Inventory id that is not a backticked `[a-z][a-z0-9-]*`, or a `data-screen` value that is not one. Such a screen takes part in no other rule. |
+| `duplicate-screen` | A `data-screen` id that is already on an earlier screen. |
+| `no-screens` | `## Inventory` has no row with an Id, and `index.md` is not the no-UI form. |
+| `screen-not-in-prototype` | An Inventory id with no `data-screen` in the prototype. |
+| `screen-not-in-index` | A `data-screen` with no Inventory row. |
+| `missing-state` | A screen without one of `empty`, `filled`, `error`. One finding per missing state. |
+| `duplicate-state` | A state present twice inside one screen. |
+| `bad-state` | A `data-state` that is not `empty`, `filled` or `error`, or that is outside every `data-screen`. |
+| `bad-transition-target` | A `data-to` whose screen is not a `data-screen`, or whose state, after `/`, is not `empty`, `filled` or `error`. |
+| `unknown-screen` | A screen id in `## Flows` that is not an Inventory id. |
+| `stray-prototype` | The no-UI form, and a `prototype.html` exists anyway. |
+
+Findings go to stderr, sorted by file then line, followed by `design check: N finding(s)`, and the exit code is 1. With none, stdout reads `design check: <screens> screens, <transitions> transitions, 0 findings` (or `design check: no screens (ui-library excluded by Ruling N), 0 findings` for the no-UI form) and the exit code is 0. A missing `index.md`, a missing `prototype.html` outside the no-UI form, or a wrong argument exits 2.
+
+`i2i gate require <stage>` runs the same check once every gate before `<stage>` holds and `design` is among them, and refuses the stage while `docs/design` has a finding; `gate stamp` never runs it.
+
+The example is the design of a browser-only household plant reminder: its index first, then its prototype.
+
+````markdown docs/design/index.md
+# Design: Plant reminders
+
+Concept: `docs/CONCEPT.md` · Stack: `docs/stack.md` · Prototype: `docs/design/prototype.html`
+
+## Inventory
+
+| Screen | Id | Basis | Purpose |
+|---|---|---|---|
+| Home | `home` | Ruling 6 | the plant list |
+| Plant | `plant` | Ruling 6 | one plant |
+
+## States
+
+| Screen | empty | filled | error |
+|---|---|---|---|
+| Home | no plants yet | the plant list | the list did not load |
+| Plant | no care history | the care history | the plant did not load |
+
+## Flows
+
+| From | To | Trigger |
+|---|---|---|
+| `home` | `plant` | the plant row |
+| `plant` | `home` | Back |
+
+## Directions
+
+Owner prototype: no directions
+
+## Change list
+
+none
+
+## Fidelity
+
+- Faithful: spacing and colors follow the chosen UI library's tokens
+- Approximated: the buttons are plain HTML with the library's class names
+
+## Screenshots
+
+| Screen | Mobile | Desktop |
+|---|---|---|
+| `home` | `png/home-mobile.png` | `png/home-desktop.png` |
+| `plant` | `png/plant-mobile.png` | `png/plant-desktop.png` |
+````
+
+````html docs/design/prototype.html
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Plant reminders</title>
+<style>
+[data-screen] { display: none }
+[data-screen].on { display: block }
+[data-state="empty"] { display: none }
+</style>
+</head>
+<body>
+<!-- <section data-screen="ghost"> is a comment, not a screen -->
+<section data-screen="home">
+  <div data-state="empty">No plants yet</div>
+  <div data-state="filled"><img src="data:," alt=""><br>Plants</div>
+  <div data-state="error">The list did not load</div>
+  <a data-to="plant">Open a plant</a>
+</section>
+<section data-screen="plant">
+  <div data-state="empty">No care history</div>
+  <div data-state="filled">Fern</div>
+  <div data-state="error">The plant did not load</div>
+  <a data-to="home/filled">Back</a>
+</section>
+<script>
+function show(id) {
+  var el = document.querySelector('[data-screen="' + id + '"]');
+  if (el) el.classList.add('on');
+}
+document.addEventListener('click', function (e) {
+  var to = e.target.getAttribute('data-to');
+  if (to) location.hash = to;
+});
+window.addEventListener('load', function () { show(location.hash.slice(1) || 'home'); });
+</script>
+</body>
+</html>
+````
+
+`test/design.test.mjs` extracts these fences and runs `design check` on them, so the example is the contract's executable form.
