@@ -56,8 +56,8 @@ function gatesBefore(name) {
   return out;
 }
 
-function readDoc(file) {
-  const text = readFileSync(file, 'utf8');
+// A document's front matter, the keys this module owns, and the body below the front matter.
+function parseDoc(text) {
   const lines = text.split('\n');
   const keys = {};
   if (lines[0] !== '---') return { front: [], keys, body: text };
@@ -70,6 +70,16 @@ function readDoc(file) {
     else front.push(line);
   }
   return { front, keys, body: lines.slice(close + 1).join('\n') };
+}
+
+function readDoc(file) {
+  return parseDoc(readFileSync(file, 'utf8'));
+}
+
+// The body of a document at a revision; undefined when the revision has no such path.
+function bodyAt(root, rev, path) {
+  const r = git(root, ['show', `${rev}:${path}`]);
+  return r.status === 0 ? parseDoc(r.stdout).body : undefined;
 }
 
 function digest(body) {
@@ -123,17 +133,47 @@ function checkGate(root, name, problems) {
     problems.push(`${doc} is based on commit ${sha}, which this repository does not have`);
     return;
   }
-  const diff = git(root, ['diff', '--quiet', sha, '--', ...pin.spec]);
-  const added = untracked(root, pin.spec);
-  if (diff.status === 0 && added.length === 0) return;
-  if (diff.status > 1) {
-    problems.push(`git diff failed on ${pin.path}: ${diff.stderr.trim()}`);
-    return;
+  const short = sha.slice(0, 7);
+  const remedy = `review ${doc}, then run ${again} again`;
+  if (!STAGES[STAGES[name].upstream].gate) {
+    // The ungated directory (docs/design, docs/specs): every file in it, untracked ones included.
+    const diff = git(root, ['diff', '--quiet', sha, '--', ...pin.spec]);
+    if (diff.status > 1) {
+      problems.push(`git diff failed on ${pin.path}: ${diff.stderr.trim()}`);
+      return;
+    }
+    const added = untracked(root, pin.spec);
+    if (diff.status !== 0 || added.length > 0) {
+      const stat = [git(root, ['diff', '--stat', sha, '--', ...pin.spec]).stdout.trimEnd(), ...added.map((f) => ` ${f} (untracked)`)]
+        .filter(Boolean)
+        .join('\n');
+      problems.push(`${pin.path} changed after ${doc} was approved (based on ${short}):\n${stat}\n  ${remedy}`);
+    }
   }
-  const stat = [git(root, ['diff', '--stat', sha, '--', ...pin.spec]).stdout.trimEnd(), ...added.map((f) => ` ${f} (untracked)`)]
-    .filter(Boolean)
-    .join('\n');
-  problems.push(`${pin.path} changed after ${doc} was approved (based on ${sha.slice(0, 7)}):\n${stat}\n  review ${doc}, then run ${again} again`);
+  // Every approved document before this gate, by body: the front matter a later approval writes is not a change.
+  for (const up of gatesBefore(name)) {
+    const upDoc = STAGES[up].doc;
+    let now;
+    try {
+      now = readDoc(join(root, upDoc)).body;
+    } catch {
+      continue; // missing or unparsable in the working tree: that gate's own check reported it
+    }
+    let then;
+    try {
+      then = bodyAt(root, sha, upDoc);
+    } catch (err) {
+      problems.push(`${upDoc} at commit ${short}: ${err.message}`);
+      continue;
+    }
+    if (then === undefined) {
+      problems.push(`${upDoc} is not in commit ${short}, which ${doc} is based on: commit it, then run ${again} again`);
+      continue;
+    }
+    if (then === now) continue;
+    const stat = git(root, ['diff', '--stat', sha, '--', upDoc]).stdout.trimEnd();
+    problems.push(`${upDoc} changed after ${doc} was approved (based on ${short}):\n${stat}\n  ${remedy}`);
+  }
 }
 
 // Edits on the remote that this checkout has not pulled. `git fetch` does not touch the working tree,
@@ -173,7 +213,8 @@ function checkStackDoc(root, problems) {
   problems.push(`${doc} has ${findings.length} finding(s): revise it with /idea-to-issues:stack, then run /idea-to-issues:approve stack again`);
 }
 
-// May `name` start? Every gated stage before it must be approved, unedited since, and current with what it was based on.
+// May `name` start? Every gated stage before it must be approved, unedited since, and current with what it was based on,
+// every approved document before it included.
 export function requireStage(root, name) {
   const gates = gatesBefore(name);
   const problems = [];
@@ -204,6 +245,21 @@ export function stamp(root, name) {
   if (pin) {
     if (dirty(root, pin.spec)) {
       return { problems: [`${pin.path} has uncommitted changes: commit them first, so based-on pins what you approved`], notes: before.notes };
+    }
+    for (const up of gatesBefore(name)) {
+      const upDoc = STAGES[up].doc;
+      let then;
+      try {
+        then = bodyAt(root, 'HEAD', upDoc);
+      } catch (err) {
+        return { problems: [`${upDoc} at HEAD: ${err.message}`], notes: before.notes };
+      }
+      if (then === undefined) {
+        return { problems: [`${upDoc} is not committed: commit it first, so based-on pins what you approved`], notes: before.notes };
+      }
+      if (then !== readDoc(join(root, upDoc)).body) {
+        return { problems: [`${upDoc} has uncommitted changes: commit them first, so based-on pins what you approved`], notes: before.notes };
+      }
     }
     keys['based-on'] = `${pin.path}@${head.stdout.trim()}`;
   }
