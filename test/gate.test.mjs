@@ -246,6 +246,104 @@ test('require fails when the upstream is edited after the downstream approval, a
   assert.doesNotMatch(r.stderr, /CONCEPT\.md was edited after its approval/);
 });
 
+test('re-approving the stack after a body edit fails require blueprint until the design is approved again, and require specs until the blueprint is', (t) => {
+  const { repo } = approvedChain(t);
+  assert.equal(i2i(repo, 'gate', 'require', 'blueprint').status, 0);
+
+  const { body } = splitFront(read(repo, 'docs/stack.md'));
+  write(repo, 'docs/stack.md', `${body}\nAlso.\n`);
+  commit(repo, 'edit stack');
+  stamp(repo, 'stack');
+  git(repo, 'push', '--quiet');
+
+  let r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md changed after docs\/design\/index\.md was approved \(based on [0-9a-f]{7}\)/);
+  assert.match(r.stderr, /docs\/stack\.md \| \d+/);
+  assert.match(r.stderr, /review docs\/design\/index\.md, then run \/idea-to-issues:approve design again/);
+  assert.doesNotMatch(r.stderr, /docs\/stack\.md was edited after its approval/);
+
+  stamp(repo, 'design');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /checked brainstorm, concept, stack, design\)$/m);
+
+  r = i2i(repo, 'gate', 'require', 'specs');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md changed after docs\/blueprint\.md was approved/);
+  assert.match(r.stderr, /run \/idea-to-issues:approve blueprint again/);
+
+  stamp(repo, 'blueprint');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'specs');
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test('a re-approval that changes no body disturbs no later gate', (t) => {
+  const { repo } = approvedChain(t);
+  stamp(repo, 'concept');
+  stamp(repo, 'design');
+  git(repo, 'push', '--quiet');
+  const r = i2i(repo, 'gate', 'require', 'specs');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /checked brainstorm, concept, stack, design, blueprint\)$/m);
+});
+
+test('a stamp made before the upstream approval was committed still passes: gates pin bodies, not front matter', (t) => {
+  const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  assert.equal(i2i(repo, 'gate', 'stamp', 'stack').status, 0);
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  git(repo, 'add', 'docs/design');
+  git(repo, 'commit', '--quiet', '-m', 'design');
+
+  const r = i2i(repo, 'gate', 'stamp', 'design');
+  assert.equal(r.status, 0, r.stderr);
+  const sha = field(splitFront(read(repo, 'docs/design/index.md')).front, 'based-on').split('@')[1];
+  assert.doesNotMatch(git(repo, 'show', `${sha}:docs/stack.md`), /^---/, 'the pinned commit holds the stack without its stamp');
+  commit(repo, 'approve stack and design');
+  git(repo, 'push', '--quiet');
+
+  const q = i2i(repo, 'gate', 'require', 'blueprint');
+  assert.equal(q.status, 0, q.stderr);
+  assert.match(q.stdout, /checked brainstorm, concept, stack, design\)$/m);
+});
+
+test('stamp refuses while an approved document further up has an uncommitted body edit', (t) => {
+  const { repo } = setup(t);
+  write(repo, 'docs/brainstorm/summary.md', SUMMARY);
+  commit(repo, 'brainstorm');
+  stamp(repo, 'brainstorm');
+  write(repo, 'docs/CONCEPT.md', CONCEPT);
+  commit(repo, 'concept');
+  stamp(repo, 'concept');
+  write(repo, 'docs/stack.md', STACK);
+  commit(repo, 'stack');
+  stamp(repo, 'stack');
+  git(repo, 'push', '--quiet');
+  const { body } = splitFront(read(repo, 'docs/stack.md'));
+  write(repo, 'docs/stack.md', `${body}\nAlso.\n`);
+  assert.equal(i2i(repo, 'gate', 'stamp', 'stack').status, 0);
+  write(repo, 'docs/design/index.md', DESIGN_INDEX);
+  write(repo, 'docs/design/prototype.html', PROTOTYPE);
+  git(repo, 'add', 'docs/design');
+  git(repo, 'commit', '--quiet', '-m', 'design');
+
+  const r = i2i(repo, 'gate', 'stamp', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md has uncommitted changes: commit them first/);
+  assert.equal(read(repo, 'docs/design/index.md'), DESIGN_INDEX);
+});
+
 test('require fails on an edit made on the remote only, and lists its commits', (t) => {
   const { tmp, repo, origin } = approvedChain(t);
   const other = join(tmp, 'other');
@@ -422,6 +520,33 @@ test('gate 3 pins the specs without its own document, and require file checks it
   r = i2i(repo, 'gate', 'require', 'file');
   assert.equal(r.status, 1);
   assert.match(r.stderr, /docs\/specs\/billing\.md \| \d+/);
+});
+
+test('re-approving the blueprint after a body edit fails require file until gate 3 is approved again', (t) => {
+  const { repo } = approvedChain(t);
+  write(repo, 'docs/specs/auth.md', '# [AUTH] Authentication\n');
+  write(repo, 'docs/specs/index.md', '# Epic order\n\n1. auth\n');
+  commit(repo, 'specs');
+  stamp(repo, 'tickets');
+  git(repo, 'push', '--quiet');
+  assert.equal(i2i(repo, 'gate', 'require', 'file').status, 0);
+
+  const { body } = splitFront(read(repo, 'docs/blueprint.md'));
+  write(repo, 'docs/blueprint.md', `${body}\nAlso a worker.\n`);
+  commit(repo, 'edit blueprint');
+  stamp(repo, 'blueprint');
+  git(repo, 'push', '--quiet');
+
+  let r = i2i(repo, 'gate', 'require', 'file');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/blueprint\.md changed after docs\/specs\/index\.md was approved \(based on [0-9a-f]{7}\)/);
+  assert.match(r.stderr, /run \/idea-to-issues:approve tickets again/);
+  assert.doesNotMatch(r.stderr, /was edited after its approval/);
+
+  stamp(repo, 'tickets');
+  git(repo, 'push', '--quiet');
+  r = i2i(repo, 'gate', 'require', 'file');
+  assert.equal(r.status, 0, r.stderr);
 });
 
 test('require design refuses while docs/stack.md has findings, and stamp stack does not run the check', (t) => {

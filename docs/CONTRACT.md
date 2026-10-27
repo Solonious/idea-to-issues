@@ -483,7 +483,7 @@ Finding: none
 
 # Design document contract
 
-The design stage writes a folder, `docs/design/`, and pins all of it at once. `docs/design/index.md` is the gate document; `gate stamp design` stamps it, and the `based-on` it writes pins `docs/design` without `index.md`, so an edit to any other file there fails the next gate until the design is approved again. There is no checker for this contract yet; the checks for ids both ways, three states per screen and transition targets come with the design check.
+The design stage writes a folder, `docs/design/`, and pins all of it at once. `docs/design/index.md` is the gate document; `gate stamp design` stamps it, and the `based-on` it writes pins `docs/design` without `index.md`, so an edit to any other file there fails the next gate until the design is approved again. There is no checker for this contract yet; the checks for ids both ways, three states per screen and transition targets come with the design check. The blueprint and tickets gates pin the body of `docs/design/index.md` in turn, as every gate pins the body of each approved document before it (README, Gate stamps).
 
 ## Layout
 
