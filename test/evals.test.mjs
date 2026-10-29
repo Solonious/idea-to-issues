@@ -31,8 +31,8 @@ function scaffold(t, name) {
 const i2i = ({ cwd, env }, ...args) => spawnSync(process.execPath, [BIN, ...args], { cwd, env, encoding: 'utf8' });
 const git = ({ cwd, env }, ...args) => spawnSync('git', args, { cwd, env, encoding: 'utf8' }).stdout.trim();
 
-test('there are three eval cases', () => {
-  assert.deepEqual([...CASES].sort(), ['cyclic-graph', 'no-artifact-tool', 'upstream-edited']);
+test('there are five eval cases', () => {
+  assert.deepEqual([...CASES].sort(), ['cyclic-graph', 'no-artifact-tool', 'prototype-edited', 'stack-findings', 'upstream-edited']);
 });
 
 test('upstream-edited: the specs gate refuses and names the edited concept', (t) => {
@@ -40,6 +40,24 @@ test('upstream-edited: the specs gate refuses and names the edited concept', (t)
   const r = i2i(ws, 'gate', 'require', 'specs');
   assert.equal(r.status, 1);
   assert.match(r.stderr, /docs\/CONCEPT\.md (was edited|changed) after/);
+});
+
+test('stack-findings: the design gate refuses and names the stack finding', (t) => {
+  const ws = scaffold(t, 'stack-findings');
+  const r = i2i(ws, 'gate', 'require', 'design');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/stack\.md has \d+ finding/);
+  assert.match(r.stderr, /missing-category/);
+  assert.equal(existsSync(join(ws.cwd, 'docs/design')), false);
+});
+
+test('prototype-edited: the blueprint gate refuses and names the edited prototype', (t) => {
+  const ws = scaffold(t, 'prototype-edited');
+  const r = i2i(ws, 'gate', 'require', 'blueprint');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /docs\/design changed after docs\/design\/index\.md was approved/);
+  assert.match(r.stderr, /prototype\.html/);
+  assert.equal(existsSync(join(ws.cwd, 'docs/blueprint.md')), false);
 });
 
 test('cyclic-graph: the gate is open and check reports the cycle', (t) => {

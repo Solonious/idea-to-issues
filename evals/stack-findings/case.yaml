@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: stack-findings
+description: The stack was approved with a check finding, so the design stage must stop and name it.
+tags: [release]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
+  prompt: |
+    Run /idea-to-issues:design.
+graders:
+  - name: ran-the-gate
+    type: tool_used
+    tool: Bash
+    input_match: 'gate require design'
+  - name: names-the-finding
+    type: regex
+    pattern: 'docs/stack\.md has \d+ finding'
+  - name: no-design-written
+    type: file_exists
+    path: 'docs/design/**'
+    exists: false
+  - name: wrote-nothing
+    type: tool_used
+    tool: Write
+    min: 0
+    max: 0
