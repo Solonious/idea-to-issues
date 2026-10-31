@@ -74,7 +74,18 @@ test('no-artifact-tool: gate 1 is open and the blueprint is not written yet', (t
   assert.equal(existsSync(join(ws.cwd, 'docs/blueprint.md')), false);
 });
 
+// README.md § Releasing, up to the next level-two heading.
+const releasing = () =>
+  readFileSync(join(ROOT, 'README.md'), 'utf8')
+    .split(/^(?=## )/m)
+    .find((section) => section.startsWith('## Releasing\n')) ?? '';
+
 for (const name of CASES) {
+  test(`${name}: the README release list names the case`, () => {
+    const lines = releasing().split('\n');
+    assert.ok(lines.some((l) => l.startsWith(`- \`${name}\`:`)), `README.md § Releasing has no bullet for ${name}`);
+  });
+
   test(`${name}: the scaffold has no remote and files nothing`, (t) => {
     const ws = scaffold(t, name);
     assert.equal(git(ws, 'remote'), '');
