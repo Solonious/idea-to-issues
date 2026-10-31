@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --test:*)",
+      "Bash(claude plugin validate --strict .:*)"
+    ]
+  }
+}
