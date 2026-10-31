@@ -36,6 +36,10 @@
       }
     ]
   },
+  "report": {
+    "_doc": "otelLogs is the OTLP/JSON log conveyor-run-report recovers the subagent output a transcript never finalized from, so a run's total is exact instead of a lower bound (≥ $X). A leading ~/ reads as $HOME; the path holds no secret. With this key set, conveyor-doctor's SessionStart hook starts conveyor-otel-sink on this path. Recovery also needs Claude Code exporting to that sink: the five variables are in the plugin's docs/decisions/otel-usage-recovery.md, and a machine without them gets a doctor WARN and the lower bound.",
+    "otelLogs": "~/.local/share/conveyor/otel-logs.jsonl"
+  },
   "pricing": {
     "_doc": "USD per 1,000,000 tokens, read from _source on _asOf; conveyor-run-report prints _asOf on every report. Move _asOf whenever a price changes; rows already in the ledger keep the prices they were priced at. A model missing here is named in the report and withholds the total: add it from the page, never guess. cacheRead is set only where the page gives a model its own cache-hit price (0.025x input on Fable 5.1, 0.05x on Opus 5.5 and Sonnet 5.5); Haiku 5.5 uses cacheMultipliers.read. Haiku 5.5 is priced by prompt length: a request whose prompt (input + cache writes + cache reads) is over 100,000 tokens pays its longContext prices.",
     "_asOf": "2026-10-21",
