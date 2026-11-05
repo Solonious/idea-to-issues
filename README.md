@@ -24,6 +24,8 @@ The agent holds the judgement: the concept, the architecture, the specs, and whe
 
 Each stage starts by checking that the stage before it is approved and has not changed since. The conversation language is a plugin setting; every artifact is written in English. Each gate page is shown entirely in the conversation language, keys, technology names and paths aside, and says which English document you approve. Gate 0 has no page: the brainstorm shows its summary in the terminal, translated, and names the English document you approve.
 
+Each stage ends at its hand-off and never starts the next stage itself. The hand-off says that the stage is done and its work is saved, that you can stop there and continue in a later session with the command it names, and which stage comes next with how long it took on the measured run (see [Models and cost](#models-and-cost)), or that it has not been measured yet.
+
 ### Running a stage
 
 Stage 0 is `/idea-to-issues:brainstorm`. An idea alone is enough; a prototype link, earlier notes or competitors you already know are welcome, not needed. A working notes file, `docs/brainstorm/notes.md`, grows across as many sessions as you want. It proposes one activity at a time: user scenarios, an attack on the idea by two subagents with opposed positions (both arguments and both rebuttals are shown verbatim, and you rule), alternative product shapes, and a deep competitor analysis. When you say the brainstorm is done, it writes `docs/brainstorm/summary.md` (the chosen shape, the key scenarios, what was rejected and why), shows it translated in the terminal and asks you to run `/idea-to-issues:approve brainstorm`.
@@ -44,15 +46,17 @@ Stage 4 is `/idea-to-issues:tickets`. It starts with `i2i gate require tickets` 
 
 Each stage skill names its model in its front matter, and each subagent dispatch names its model in the skill text. The owner chose them on 2026-10-25.
 
-| Stage | Session model | Subagents | Cost of the stage |
-|---|---|---|---|
-| brainstorm | Opus | the attack pair and its rebuttals: Opus | about $2.60 |
-| concept | Opus | none | about $2.20 |
-| stack | Opus | per row, the advocate pair and its rebuttals: Opus; the ledger challenger: Opus | about $23 |
-| design | Opus | one per direction, in parallel: Opus | not measured yet; measure on the first real run |
-| blueprint | Fable | none | about $12 |
-| specs | Opus | none | about $4.70 |
-| tickets | Sonnet | none | about $1.70 |
+| Stage | Session model | Subagents | Cost of the stage | Duration |
+|---|---|---|---|---|
+| brainstorm | Opus | the attack pair and its rebuttals: Opus | about $2.60 | about 40 min |
+| concept | Opus | none | about $2.20 | about 52 min |
+| stack | Opus | per row, the advocate pair and its rebuttals: Opus; the ledger challenger: Opus | about $23 | about 1 h 17 min |
+| design | Opus | one per direction, in parallel: Opus | not measured yet; measure on the first real run | about 1 h 31 min |
+| blueprint | Fable | none | about $12 | not measured yet |
+| specs | Opus | none | about $4.70 | not measured yet |
+| tickets | Sonnet | none | about $1.70 | not measured yet |
+
+**Durations** are wall-clock times from the session logs of one run, PILOT-3 (#50, 2026-10-29), on the models above. The four stages ran back to back, about 4 h 20 min in all, and the design run stopped before its approval. One run is rough, so every figure is "about", and a stage that has not run yet says "not measured yet" rather than a guess. This column is the record: each stage's hand-off quotes the next stage's figure from it, and the tests check that the quotes match.
 
 The grilling skill runs on the model of the stage that uses it (`model: inherit`); its fact-lookup subagent runs on Sonnet.
 

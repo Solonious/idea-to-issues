@@ -74,7 +74,7 @@ Append `Stopped at: summary written — next: /idea-to-issues:approve brainstorm
 
 ## Step 6: Hand off to gate 0
 
-Show the owner the whole summary translated into ${user_config.language} in the terminal. Say that the approval is of the English document `docs/brainstorm/summary.md`, then ask them to run `/idea-to-issues:approve brainstorm`. Stop there.
+Show the owner the whole summary translated into ${user_config.language} in the terminal. Say that the approval is of the English document `docs/brainstorm/summary.md`, then ask them to run `/idea-to-issues:approve brainstorm`. Then tell the owner that the stage is done and its work is saved in `docs/brainstorm/summary.md` and `docs/brainstorm/notes.md`, that they can stop here and continue in a later session with `/idea-to-issues:approve brainstorm` and then `/idea-to-issues:concept`, and that the next stage is `concept`, which took about 52 min on PILOT-3 (#50, 2026-10-29). Stop there.
 
 ## Never
 

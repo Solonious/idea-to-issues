@@ -94,7 +94,7 @@ A change the owner asks for during review goes into `docs/design/index.md`, `doc
 
 ## Step 11: Hand off to the design gate
 
-Show the owner the paths and a short summary, then ask them to commit `docs/design/` in one commit and then run `/idea-to-issues:approve design`. If `git status --porcelain -- docs/design ':(exclude)docs/design/index.md'` prints anything, say that the approval will be refused until those files are committed. Stop there.
+Show the owner the paths and a short summary, then ask them to commit `docs/design/` in one commit and then run `/idea-to-issues:approve design`. If `git status --porcelain -- docs/design ':(exclude)docs/design/index.md'` prints anything, say that the approval will be refused until those files are committed. Then tell the owner that the stage is done and its work is saved in `docs/design/`, that they can stop here and continue in a later session with a commit of `docs/design/`, `/idea-to-issues:approve design` and then `/idea-to-issues:blueprint`, and that the next stage is `blueprint`, whose duration is not measured yet. Stop there.
 
 ## Never
 

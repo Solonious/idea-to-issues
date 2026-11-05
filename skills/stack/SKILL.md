@@ -88,7 +88,7 @@ The page opens with an overview table built from the rows, `| Category | Default
 
 ## Step 10: Hand off to the stack gate
 
-Show the owner the document path, the ADR paths and a short summary, then ask them to run `/idea-to-issues:approve stack`. If `git status --porcelain -- docs/CONCEPT.md` prints anything, say that the approval will be refused until `docs/CONCEPT.md` is committed. Stop there.
+Show the owner the document path, the ADR paths and a short summary, then ask them to run `/idea-to-issues:approve stack`. If `git status --porcelain -- docs/CONCEPT.md` prints anything, say that the approval will be refused until `docs/CONCEPT.md` is committed. Then tell the owner that the stage is done and its work is saved in `docs/stack.md` and `docs/adr/`, that they can stop here and continue in a later session with `/idea-to-issues:approve stack` and then `/idea-to-issues:design`, and that the next stage is `design`, which took about 1 h 31 min on PILOT-3 (#50, 2026-10-29). Stop there.
 
 ## Never
 
