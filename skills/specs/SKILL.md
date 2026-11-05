@@ -100,7 +100,7 @@ Fix what you find, then run `check` again.
 
 ## Step 8: Hand off to the tickets stage
 
-Show the owner the epic file paths and the ticket table from `i2i.mjs check --render docs/specs`. Say that `docs/specs` must be committed before gate 3 can be approved, because gate 3 pins `docs/specs` at a commit. Then say the next stage is `/idea-to-issues:tickets`, which orders the epics and presents gate 3. Stop there.
+Show the owner the epic file paths and the ticket table from `i2i.mjs check --render docs/specs`. Say that `docs/specs` must be committed before gate 3 can be approved, because gate 3 pins `docs/specs` at a commit. Then tell the owner that the stage is done and its work is saved in `docs/specs/`, that they can stop here and continue in a later session with a commit of `docs/specs` and then `/idea-to-issues:tickets`, which orders the epics and presents gate 3, and that the next stage is `tickets`, whose duration is not measured yet. Stop there.
 
 ## Never
 

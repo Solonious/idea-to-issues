@@ -69,7 +69,7 @@ Nothing is decided only on the page.
 
 ## Step 5: Hand off to gate 3
 
-Show the owner the path `docs/specs/index.md` and the page link or the terminal summary, then ask them to run `/idea-to-issues:approve tickets` and to tell you when it is done. If `git status --porcelain -- docs/specs ':(exclude)docs/specs/index.md'` prints anything, say that the approval will be refused until those epic files are committed.
+Show the owner the path `docs/specs/index.md` and the page link or the terminal summary, then ask them to run `/idea-to-issues:approve tickets` and to tell you when it is done. If `git status --porcelain -- docs/specs ':(exclude)docs/specs/index.md'` prints anything, say that the approval will be refused until those epic files are committed. Tell the owner that the epic order is saved in `docs/specs/index.md`, that they can stop here and continue in a later session with `/idea-to-issues:approve tickets` and then `/idea-to-issues:tickets`, which resumes at gate 3, and that the next step is filing the Issues, whose duration is not measured yet.
 
 Then wait. When the owner says the gate is approved, or runs `/idea-to-issues:tickets` again, go on to step 6, which checks the approval itself.
 
@@ -143,7 +143,7 @@ Never repair GitHub by hand. The stage is done only when `verify --wait` exits 0
 
 Tell the owner how many epics and tickets GitHub holds (`verify` prints both), and give the repository's Issues link and the Project's link. Ask them to open the Project and check that every epic has its tickets nested under it. `file` adds only the epics, so if tickets are missing, the owner checks the Project's "Auto-add sub-issues to project" workflow and adds the missing tickets to the Project on GitHub.
 
-Ask the owner to commit and push `docs/specs/index.md`, so that a run from another checkout sees gate 3. Stop there.
+Ask the owner to commit and push `docs/specs/index.md`, so that a run from another checkout sees gate 3. Then tell the owner that the stage is done and its work is saved in the Issues on GitHub and in `docs/specs/index.md`, and that this was the last stage of idea-to-issues: no stage comes next, so there is nothing to continue. Stop there.
 
 ## Never
 

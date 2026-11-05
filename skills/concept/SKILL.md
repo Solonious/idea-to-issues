@@ -48,7 +48,7 @@ Write it in English from [references/concept-template.md](references/concept-tem
 
 ## Step 5: Hand off to gate 1
 
-Show the owner the document path and a short summary, then ask them to run `/idea-to-issues:approve concept`. Stop there.
+Show the owner the document path and a short summary, then ask them to run `/idea-to-issues:approve concept`. Then tell the owner that the stage is done and its work is saved in `docs/CONCEPT.md`, that they can stop here and continue in a later session with `/idea-to-issues:approve concept` and then `/idea-to-issues:stack`, and that the next stage is `stack`, which took about 1 h 17 min on PILOT-3 (#50, 2026-10-29). Stop there.
 
 ## Never
 

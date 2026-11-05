@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORIES } from '../bin/lib/stack.mjs';
+import { STAGES } from '../bin/lib/gate.mjs';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 const read = (p) => readFileSync(path(p), 'utf8');
@@ -67,6 +68,59 @@ test('each gated stage skill hands off to its gate and never stamps', () => {
     assert.ok(body.includes(`/idea-to-issues:approve ${name}`), `${name} hands off to its gate`);
     for (const line of body.split('\n').filter((l) => l.includes('gate stamp'))) {
       assert.match(line, /never/i, `${name}: only the never rule may mention gate stamp: ${line}`);
+    }
+  }
+});
+
+test('every hand-off says the work is saved, that the owner can stop, how to continue, and how long the next stage took', () => {
+  const RUN = 'PILOT-3 (#50, 2026-10-29)';
+  const order = Object.keys(STAGES).filter((s) => SKILLS.includes(s));
+  assert.deepEqual(order, ['brainstorm', 'concept', 'stack', 'design', 'blueprint', 'specs', 'tickets']);
+
+  // The README's Duration column is the record every hand-off quotes.
+  const readme = read('README.md');
+  const rows = readme.split('\n').filter((l) => l.startsWith('|')).map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
+  const header = rows.find((r) => r[0] === 'Stage' && r.includes('Duration'));
+  assert.ok(header, 'the README model table has a Duration column');
+  const col = header.indexOf('Duration');
+  const duration = Object.fromEntries(rows.filter((r) => order.includes(r[0]) && r.length === header.length).map((r) => [r[0], r[col]]));
+  assert.deepEqual(Object.keys(duration).sort(), [...order].sort(), 'every stage has a Duration cell');
+  for (const [name, cell] of Object.entries(duration)) {
+    assert.match(cell, /^(about \d|not measured yet$)/, `${name}: a duration is "about …" or "not measured yet": ${cell}`);
+  }
+  assert.ok(readme.includes(`from the session logs of one run, ${RUN}`), 'the README names the run the durations come from');
+
+  for (const [i, name] of order.entries()) {
+    const lines = splitFront(read(`skills/${name}/SKILL.md`)).body.split('\n');
+    const starts = lines.flatMap((l, at) => (/^## Step \d+: Hand (off|over)\b/.test(l) ? [at] : []));
+    assert.ok(starts.length > 0, `${name} has a hand-off step`);
+    for (const [k, start] of starts.entries()) {
+      const end = lines.findIndex((l, at) => at > start && l.startsWith('## '));
+      const section = lines.slice(start, end < 0 ? undefined : end).join('\n').trim();
+      const where = `${name}: ${lines[start]}`;
+      const last = k === starts.length - 1;
+      const next = order[i + 1];
+      if (!last) {
+        // A hand-off inside a stage (tickets, before gate 3): re-invoking the stage resumes it, and by the
+        // owner's ruling of 2026-11-05 it waits for the owner instead of stopping.
+        assert.ok(section.includes(`they can stop here and continue in a later session with \`/idea-to-issues:approve ${name}\` and then \`/idea-to-issues:${name}\``), `${where}: says how to continue`);
+        assert.ok(section.includes('whose duration is not measured yet'), `${where}: says the next step is not measured yet`);
+        assert.ok(section.endsWith('go on to step 6, which checks the approval itself.') && section.includes('\nThen wait.'), `${where}: waits for the owner`);
+        continue;
+      }
+      assert.ok(section.includes('Then tell the owner that the stage is done and its work is saved in '), `${where}: says the work is saved`);
+      assert.ok(section.endsWith('Stop there.'), `${where}: ends with "Stop there."`);
+      if (!next) {
+        assert.ok(section.includes('this was the last stage of idea-to-issues: no stage comes next'), `${where}: says it was the last stage`);
+        continue;
+      }
+      const resume = STAGES[name].gate ? `\`/idea-to-issues:approve ${name}\` and then \`/idea-to-issues:${next}\`` : `\`/idea-to-issues:${next}\``;
+      assert.ok(section.includes('that they can stop here and continue in a later session with '), `${where}: says the owner can stop`);
+      assert.ok(section.includes(resume), `${where}: continues with ${resume}`);
+      const said = duration[next] === 'not measured yet'
+        ? `the next stage is \`${next}\`, whose duration is not measured yet.`
+        : `the next stage is \`${next}\`, which took ${duration[next]} on ${RUN}.`;
+      assert.ok(section.includes(said), `${where}: quotes the README duration of ${next}: ${said}`);
     }
   }
 });
