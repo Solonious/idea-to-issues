@@ -27,7 +27,7 @@ Read `## Inventory` of `docs/design/index.md`: its `Id` column is the `data-scre
 Settle every open thread handed to this stage with the two kinds of question from the grilling skill (`/idea-to-issues:grilling`):
 
 - Technical: decide it yourself from evidence.
-- Product: put it to the owner, one question per turn, with a recommended answer.
+- Product: put it to the owner, one question per turn, weighed as core or detail by the grilling rule: a core question is asked open, and only a detail question carries a recommended answer.
 
 If `docs/specs/` already holds epic files, say so and ask whether to revise them or stop (one question). Revising after gate 3 was approved means the owner approves gate 3 again, because it pins `docs/specs`.
 

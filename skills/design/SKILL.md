@@ -33,19 +33,19 @@ Then, in this order:
 
 Derive every first-version screen from the concept's Rulings and the brainstorm's Key scenarios. Each screen has an id (`[a-z][a-z0-9-]*`), a purpose, `Basis: Ruling N`, its three states (empty, filled, error) and its transitions to other screens.
 
-Put the inventory to the owner one question at a time with the grilling skill (`/idea-to-issues:grilling`), the recommended answer first: which screens exist, which are missing, which to drop. A screen with no ruling behind it is a question to the owner, never added silently. The agreed inventory goes into `## Inventory` of `docs/design/index.md`.
+Put the inventory to the owner one question at a time with the grilling skill (`/idea-to-issues:grilling`): which screens exist, which are missing, which to drop. Confirming a screen that a cited ruling already asks for is a detail question and carries a recommended answer; adding a screen no ruling asks for, or dropping or changing one that the owner's prototype or notes show, is a core question and is asked open. A screen with no ruling behind it is a question to the owner, never added silently. The agreed inventory goes into `## Inventory` of `docs/design/index.md`.
 
 ## Step 4: The owner's prototype
 
 Read the concept's `Prototype:` line. If it has a link, open it with what this session has: a local file with Read, a claude.ai Artifact link with the Artifact tool's read, images with Read. If it cannot be opened (a Figma link without access, for example), say so, ask the owner for an export and wait for it.
 
-Start from the owner's prototype: move it onto the chosen UI library, add the missing screens, states and transitions. Every change from the owner's prototype is a row of `## Change list` in `docs/design/index.md`, and each is put to the owner for a ruling one question at a time. Then skip Step 5.
+Start from the owner's prototype: move it onto the chosen UI library, add the missing screens, states and transitions. Every change from the owner's prototype is a row of `## Change list` in `docs/design/index.md`, and each is put to the owner for a ruling one question at a time, as a core question under the grilling rule (a change to the owner's material), asked open. Then skip Step 5.
 
 ## Step 5: Directions
 
 Only without an owner prototype. For each of the three directions, dispatch one subagent with the Agent tool, `model: opus`, given the concept's Problem, Who it is for and Rulings, the approved inventory, the `ui-library` row and the Design document contract of `docs/CONTRACT.md`, with one assigned character, dense, calm or expressive, told to write `docs/design/directions/<slug>.html`: a key screen, the palette, the type scale and the density, the root marked `data-direction="<slug>"` and never a `data-screen`. The three run in parallel and never see each other's work.
 
-Show them to the owner. With the Artifact tool, publish each file byte for byte as a private Artifact; without it, give the owner the three paths to open in a browser. Then ask one question: which direction, with a recommended one and the reason. The answers are the three directions and "none of them, redraw". On "none of them", run this step again with three fresh subagents; the files already in `docs/design/directions/` stay and are recorded as rejected.
+Show them to the owner. With the Artifact tool, publish each file byte for byte as a private Artifact; without it, give the owner the three paths to open in a browser. Then ask one question: which direction. It is a detail question under the grilling rule (the look, which is none of its five core topics), so name a recommended one and the reason. The answers are the three directions and "none of them, redraw". On "none of them", run this step again with three fresh subagents; the files already in `docs/design/directions/` stay and are recorded as rejected.
 
 Record ``Chosen: `<slug>` — <why>`` and one ``Rejected: `<slug>` — <why>`` for every other direction in `## Directions`.
 

@@ -38,9 +38,9 @@ Run the grilling skill (`/idea-to-issues:grilling`) on the summary's Chosen shap
 
 Ask every question in ${user_config.language}, the stack questions included: translate each one faithfully, adding nothing and dropping nothing. Only the ruling in `docs/CONCEPT.md` keeps the English question, exactly as written in the reference file, so the stack stage can match it.
 
-Ask the platform before the other stack questions; the recommended answer to each stack question follows from the platform and from the summary's Chosen shape and Key scenarios — name the line it follows from. Ask a stack question even when the summary seems to answer it: the ruling is the owner's, and the stack stage cites the ruling, not the summary. A stack question is never an open thread: "not in the first version" is a ruling of no.
+Ask the platform before the other stack questions. Under the grilling rule the questions on the number of users and on the language users read on screen, and every question of the Stack categories table, are core questions (each decides who the product is for or what is in the first version) and are asked open; the platform, offline use and the budget are detail questions, and the recommended answer to each follows from the platform and from the summary's Chosen shape and Key scenarios — name the line it follows from. Ask a stack question even when the summary seems to answer it: the ruling is the owner's, and the stack stage cites the ruling, not the summary. A stack question is never an open thread: "not in the first version" is a ruling of no.
 
-Facts are yours to find. Rulings are the owner's: one product question per turn, each with a recommended option. Stop when no product question is open.
+Facts are yours to find. Rulings are the owner's: one product question per turn, weighed as core or detail by the grilling rule. The problem, who it is for and what is in and out of the first version are core questions, asked open; only a detail question carries a recommended answer. Stop when no product question is open.
 
 ## Step 4: Write `docs/CONCEPT.md`
 
