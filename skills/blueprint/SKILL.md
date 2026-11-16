@@ -31,7 +31,7 @@ If `docs/blueprint.md` already exists, say so and ask whether to revise it or st
 Settle every open thread the concept hands to the blueprint, and reopen nothing the concept ruled on. Use the two kinds of question from the grilling skill (`/idea-to-issues:grilling`):
 
 - Technical (how modules are cut, what owns which data, the shape of the API surface, where a flow runs): decide it yourself from evidence, within the stack. When it is hard to reverse, it becomes an ADR (step 5). A thread that needs a layer `docs/stack.md` has no row for is not settled here: step 4 writes it as an open thread for the stack stage.
-- Product (what the user gets or gives up): put it to the owner, one question per turn, with a recommended answer.
+- Product (what the user gets or gives up): put it to the owner, one question per turn, weighed as core or detail by the grilling rule: a core question is asked open, and only a detail question carries a recommended answer.
 
 A thread handed to a later stage stays an open thread.
 

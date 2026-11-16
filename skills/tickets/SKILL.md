@@ -45,7 +45,7 @@ Otherwise:
 
 The owner chooses the order the epics are built in. Inside an epic the order is mechanical: it follows from the `blocked-by` lines, so it is never asked and never written down.
 
-Read every epic file in `docs/specs/` (its key, title and file name) and the Epics table of `docs/blueprint.md`. Ask the owner for the epic order in one question, with a recommended answer: the order of the blueprint's Epics table, the walking-skeleton epic (its row 1) first, because its `KEY-1` is the root of the whole graph.
+Read every epic file in `docs/specs/` (its key, title and file name) and the Epics table of `docs/blueprint.md`. Ask the owner for the epic order in one question. It is a detail question (the order of building, not what is built), so it carries a recommended answer: the order of the blueprint's Epics table, the walking-skeleton epic (its row 1) first, because its `KEY-1` is the root of the whole graph.
 
 If the chosen order puts an epic before another epic whose ticket blocks one of its tickets, say so in one line: those tickets wait for their blockers whatever the order. It is a note, not a refusal.
 
@@ -94,7 +94,7 @@ gh project list --owner <owner login> --format json
 
 If `gh` says the token lacks the `project` scope, ask the owner to run `! gh auth refresh -s project` (the `!` runs it in this session), then read again. `file --project` needs the same scope.
 
-Ask the owner which Project the epics go into (one question): one of the Projects listed, by title; a new Project; or none. Recommend an existing Project whose title names the product, otherwise a new one named after it.
+Ask the owner which Project the epics go into (one question): one of the Projects listed, by title; a new Project; or none. It is a detail question, so recommend an existing Project whose title names the product, otherwise a new one named after it.
 
 - A new Project is the owner's to create; you never create one. Give them the command to type, with the owner login and the title filled in: `! gh project create --owner <owner login> --title "<title>"`. Then read `gh project list` again, confirm the title is there, and take its number from the listing. Give them the second command, which shows the Project on the repository's Projects tab: `! gh project link <number> --owner <owner login> --repo <repo name>`. If two Projects share the title, ask the owner to rename one.
 - `file` adds only the epics to the Project; GitHub adds their tickets, the sub-issues, through the Project's "Auto-add sub-issues to project" workflow. Ask the owner to check that this workflow is on (the Project's ⋯ menu, then Workflows) before anything is filed.

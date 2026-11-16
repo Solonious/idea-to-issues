@@ -30,6 +30,66 @@ test('the grilling skill carries the upstream MIT attribution', () => {
   assert.ok(skill.includes('](LICENSE)'));
 });
 
+test('the grilling skill weighs each question: five core topics, the doubt rule, and no recommended answer on a core question', () => {
+  const text = read('skills/grilling/SKILL.md');
+  const { front, body } = splitFront(text);
+  const lines = body.split('\n');
+  const CORE = [
+    '1. who the product is for',
+    '2. the problem it solves',
+    '3. the core mechanic',
+    '4. what is in the first version',
+    '5. any change to, or removal of, material the owner brought themselves (the idea text, a prototype, notes)',
+  ];
+  const from = body.indexOf('## One question per turn');
+  const open = body.indexOf('### A core question is asked open');
+  const detail = body.indexOf('### A detail question carries a recommended answer');
+  const end = body.indexOf('## Record each ruling');
+  assert.ok(from >= 0 && from < open && open < detail && detail < end, 'weighing, then the core question, then the detail question');
+
+  const weighing = body.slice(from, open);
+  assert.deepEqual(weighing.split('\n').filter((l) => /^\d+\. /.test(l)), CORE, 'the five core topics, and no sixth');
+  assert.ok(weighing.includes('the same in every stage'));
+  assert.ok(weighing.includes('When it is unclear whether a question is core, it is core.'), 'the doubt rule');
+
+  const core = body.slice(open, detail);
+  assert.ok(core.includes('A core question carries no recommended answer and is never worded so that "yes" accepts one.'));
+  assert.ok(core.includes('Ask it in plain text, also when the `AskUserQuestion` tool is available'));
+  assert.ok(core.includes('❓ **<question title>**: <question body>\n```'), 'the open format ends at the question');
+  assert.ok(!core.includes('➡️') && !core.includes('(Recommended)'), 'a core question has no recommended-answer slot');
+
+  // The unconditional rule must not come back, verbatim or rephrased.
+  assert.ok(!text.includes('word the question so "yes" accepts it'), 'the unconditional rule is gone');
+  const all = [...front, ...lines];
+  for (const l of all.filter((l) => /recommend/i.test(l))) {
+    assert.match(l, /\b(core|detail)\b/, `a recommendation is always scoped to a weight: ${l.slice(0, 80)}`);
+  }
+  for (const l of all.filter((l) => /accepts/i.test(l))) {
+    assert.ok(l.includes('is never worded so that "yes" accepts one') || l.startsWith('- A detail question '), `"yes" accepts only a detail answer: ${l.slice(0, 80)}`);
+  }
+  assert.deepEqual(lines.filter((l) => l.includes('➡️')), ['➡️ <your recommended answer to this detail question>']);
+  assert.equal(lines.filter((l) => l.includes('(Recommended)')).length, 1, 'only the detail question names the label');
+  assert.ok(text.includes('a weight for every product question'), 'the change from upstream is named');
+});
+
+test('no stage skill asks for a recommended answer on every product question', () => {
+  const stages = SKILLS.filter((name) => name !== 'grilling');
+  const files = [...stages.map((name) => `skills/${name}/SKILL.md`), 'skills/concept/references/stack-questions.md'];
+  for (const f of files) {
+    for (const l of read(f).split('\n')) {
+      assert.doesNotMatch(l, /accepts it|\(Recommended\)/, `${f}: the format lives in the grilling skill: ${l.slice(0, 80)}`);
+      if (!/recommend/i.test(l)) continue;
+      // concept: a rejected alternative is never the recommendation — a limit, not a request for one.
+      assert.match(l, /\bdetail questions?\b|never offer one as a recommended answer/, `${f}: a recommendation is limited to a detail question: ${l.slice(0, 80)}`);
+    }
+  }
+  for (const name of ['brainstorm', 'concept', 'blueprint', 'specs']) {
+    assert.ok(splitFront(read(`skills/${name}/SKILL.md`)).body.includes('weighed as core or detail by'), `${name} defers to the grilling rule`);
+  }
+  const design = splitFront(read('skills/design/SKILL.md')).body;
+  assert.ok(design.includes("as a core question under the grilling rule (a change to the owner's material)"), 'a change to the owner\'s prototype is asked open');
+});
+
 test('each skill has name and description front matter, and the name matches its directory', () => {
   for (const name of SKILLS) {
     const { front } = splitFront(read(`skills/${name}/SKILL.md`));

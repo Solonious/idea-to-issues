@@ -8,7 +8,7 @@ model: opus
 
 Talk to the owner in ${user_config.language}. `docs/brainstorm/notes.md` and `docs/brainstorm/summary.md` are always written in English.
 
-Every question to the owner follows the grilling skill (`/idea-to-issues:grilling`): one product question per turn, each with a recommended answer. Facts are yours to find.
+Every question to the owner follows the grilling skill (`/idea-to-issues:grilling`): one product question per turn, weighed as core or detail by its rule. A core question is asked open, with no recommended answer; only a detail question carries one. Facts are yours to find.
 
 ## The notes file
 
@@ -26,7 +26,7 @@ Each session ends by appending, as the last line of its last entry, `Stopped at:
 
 ## Step 2: Propose the next activity
 
-Propose the first activity that has not run yet, in the order scenarios → attack → alternatives → competitors, or the next step the last `Stopped at:` line names. One question, with a recommended answer. The owner may pick any other activity, repeat one that has run, or dump ideas freely, which becomes a `free` entry. Each activity may run as many times as the owner wants; after each one, return to this step.
+Propose the first activity that has not run yet, in the order scenarios → attack → alternatives → competitors, or the next step the last `Stopped at:` line names. One question; it is a detail question (which activity runs next, not what the product is), so it carries a recommended answer. The owner may pick any other activity, repeat one that has run, or dump ideas freely, which becomes a `free` entry. Each activity may run as many times as the owner wants; after each one, return to this step.
 
 Tell "stop for now" (go to Step 4) from "the brainstorm is done" (go to Step 5). If it is unclear which the owner means, ask (one question).
 
@@ -44,13 +44,13 @@ If the Agent tool is not in your tool list, say that the attack cannot run here 
 
 Otherwise dispatch two subagents with the Agent tool, `model: opus`, each given the idea, the notes so far and one assigned position: one defends the idea, the other argues why it fails or why nobody needs it. Neither sees the other's first argument. Print both arguments verbatim, unabridged.
 
-Then always run a rebuttal round, still on `model: opus`: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose. Print both replies verbatim. Then put the open question to the owner (one question, with a recommended answer).
+Then always run a rebuttal round, still on `model: opus`: each subagent gets the other's argument and replies in three parts: where I was wrong, where I still disagree, what I now propose. Print both replies verbatim. Then put the open question to the owner (one question, weighed by the grilling rule: whether the idea stands, and any change either side proposes to who it is for, the problem, the core mechanic or the first version, is a core question and is asked open).
 
 Append the entry with `### Defence`, `### Attack`, `### Rebuttal — defence`, `### Rebuttal — attack` and `### Ruling` (`<question> → <ruling> — <why>`).
 
 ### Alternatives
 
-Propose 2–3 other ways to solve the same problem: another platform, a smaller product, another mechanic. The owner rules on each (one question per shape, with a recommended answer): keep it, or reject it with a reason. Append each shape with its ruling.
+Propose 2–3 other ways to solve the same problem: another platform, a smaller product, another mechanic. The owner rules on each (one question per shape; a shape changes the core mechanic, the first version or who it is for, so each is a core question, asked open): keep it, or reject it with a reason. Append each shape with its ruling.
 
 ### Competitors
 
