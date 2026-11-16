@@ -5,7 +5,7 @@ import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CATEGORIES } from '../bin/lib/stack.mjs';
+import { CATEGORIES, parseRulings } from '../bin/lib/stack.mjs';
 import { STAGES } from '../bin/lib/gate.mjs';
 
 const path = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
@@ -88,6 +88,102 @@ test('no stage skill asks for a recommended answer on every product question', (
   }
   const design = splitFront(read('skills/design/SKILL.md')).body;
   assert.ok(design.includes("as a core question under the grilling rule (a change to the owner's material)"), 'a change to the owner\'s prototype is asked open');
+});
+
+test('the grilling skill states an answer that follows from the owner\'s words as an inference, before it weighs anything', () => {
+  const text = read('skills/grilling/SKILL.md');
+  const { front, body } = splitFront(text);
+  const at = (h) => body.indexOf(h);
+  const from = at('## One question per turn');
+  const weigh = at('Weigh the question before you ask it.');
+  const open = at('### A core question is asked open');
+  const detail = at('### A detail question carries a recommended answer');
+  const infer = at('### An answer that follows from the owner\'s words is stated as an inference');
+  const record = at('## Record each ruling');
+  const stop = at('## Stop when nothing is open');
+  assert.ok(from >= 0 && from < weigh && weigh < open && open < detail && detail < infer && infer < record && record < stop, 'the check, the weighing, the three forms, the record');
+
+  // AC-1: the check comes before the weighing, so the doubt rule cannot make a settled question core.
+  const check = body.slice(from, weigh);
+  assert.ok(check.includes('Before you weigh a question, check whether the owner has already answered it.'));
+  assert.ok(check.includes('do not ask the question and do not weigh it: state the answer as an inference'));
+
+  const form = body.slice(infer, record);
+  assert.ok(form.includes('is not asked open, as a core question is, and carries no recommended answer, as a detail question does.'));
+  assert.ok(form.includes('State it in plain text, also when the `AskUserQuestion` tool is available'));
+  assert.ok(form.includes('names its source: the owner\'s words, quoted as they said them, or the ruling, cited as the calling skill cites it'));
+  assert.ok(form.includes('states at most five inferences'));
+  assert.ok(form.includes('Whatever the owner does not remove stands.'));
+  assert.deepEqual(form.split('\n').filter((l) => l.includes('❓')), ['❓ What here is not what you meant?'], 'one open question ends the turn');
+  assert.ok(form.includes('- <inference> — from "<the owner\'s words>"\n- <inference> — from Ruling N\n\n❓ What here is not what you meant?\n```'), 'the format ends at the question');
+  assert.ok(!form.includes('➡️') && !form.includes('(Recommended)') && !/accepts/i.test(form), 'an inference is not a recommended answer');
+
+  // The owner's rulings of 2026-11-16: the sources, no chains, which way doubt goes, the shape never left to doubt.
+  assert.ok(form.includes('The sources are these and no others:'));
+  assert.ok(form.includes('- what the owner said in this interview;'));
+  assert.ok(form.includes('- material the owner brought themselves (the idea text, notes).'));
+  assert.ok(form.includes('- a ruling the owner gave themselves earlier and a document records'));
+  assert.ok(form.includes('A ruling marked `[inferred]` is never a source: nothing is inferred from an inference.'));
+  assert.ok(form.includes('When it is unclear whether an answer follows, it does not follow: weigh the question.'));
+  assert.ok(form.includes('when the owner has said how the core mechanic works and the question is about the step that follows from it, the answer follows'));
+
+  // AC-2: a kept inference is a ruling, marked, and only after the owner's reply.
+  const rec = body.slice(record, stop);
+  assert.ok(rec.includes('An inference becomes a ruling only when the owner has replied to its turn without removing it.'));
+  assert.ok(rec.includes('Record it as a ruling marked `[inferred]`'));
+  assert.ok(rec.includes('`<question> → <ruling> — from "<the owner\'s words>" [inferred]`'));
+  assert.ok(rec.includes('The mark comes after the reason and before any tag the calling skill puts at the end of the line.'));
+  assert.ok(!rec.includes('. Do not assume an answer'), 'the old sentence forbade a standing inference');
+  assert.ok(body.slice(stop).includes('say which rulings are inferred'));
+
+  // AC-3: the DEPTH-15 weighing paragraph is byte for byte what it was.
+  const WEIGHING = [
+    'Weigh the question before you ask it. It is a **core** question when its answer decides any of these five topics, the same in every stage:',
+    '',
+    '1. who the product is for',
+    '2. the problem it solves',
+    '3. the core mechanic',
+    '4. what is in the first version',
+    '5. any change to, or removal of, material the owner brought themselves (the idea text, a prototype, notes)',
+    '',
+    'Every other product question is a **detail** question. When it is unclear whether a question is core, it is core. A stage skill may name the questions of its own that are details; it never makes a detail of a question on one of the five topics.',
+    '',
+    '### A core question is asked open',
+  ].join('\n');
+  assert.ok(body.includes(WEIGHING), 'the five topics and the doubt rule are unchanged');
+  assert.ok(form.includes('A question whose answer follows only from such a ruling is weighed as core or detail.'));
+
+  assert.ok(front.some((l) => l.startsWith('description: ') && l.includes('stating as an inference')), 'the description names the third form');
+  assert.ok(text.includes('an inference stated in place of a question the owner\'s own words already answer'), 'the change from upstream is named');
+});
+
+test('the stage skills defer to the inference rule, and a kept inference is marked where a ruling line is written', () => {
+  const body = (name) => splitFront(read(`skills/${name}/SKILL.md`)).body;
+  for (const name of ['brainstorm', 'concept', 'blueprint', 'specs']) {
+    assert.ok(body(name).includes('An answer that already follows from the owner\'s own words is not asked: it is stated as an inference under the grilling rule.'), `${name} defers to the inference rule`);
+  }
+
+  const design = body('design');
+  assert.ok(design.includes('A screen that a cited ruling already asks for is stated as an inference under the grilling rule, citing that ruling'));
+  assert.ok(design.includes('when the ruling is marked `[inferred]`, confirming the screen is a detail question and carries a recommended answer'), 'no inference from an inferred ruling');
+  assert.ok(!design.includes('Confirming a screen that a cited ruling already asks for is a detail question'));
+
+  // The summary: its Chosen shape is the idea text, nothing else in it is a source, and it never settles a stack question.
+  const concept = body('concept');
+  assert.ok(concept.includes('The summary\'s Chosen shape counts as the owner\'s idea text for that rule; no other section of the summary is a source.'));
+  assert.ok(concept.includes('Never skip a stack question: each one ends in a ruling, because the stack stage cites the ruling, not the summary.'));
+  assert.ok(concept.includes('The summary never settles a stack question: ask it even when the summary seems to answer it.'));
+  assert.ok(concept.includes('When the owner\'s words in this interview, material they brought to it, or a ruling they gave already answer it (never the summary, its Chosen shape included)'), 'an earlier ruling of the owner answers a stack question');
+  assert.ok(concept.includes('the inference the owner keeps is that question\'s ruling'));
+  assert.ok(read('skills/concept/references/stack-questions.md').includes('The owner\'s answer, or the inference the owner keeps, becomes a numbered ruling'));
+
+  // The mark: one fixed token, after the why, before the stack tag.
+  assert.ok(body('brainstorm').includes('`<question> → <ruling> — from "<the owner\'s words>" [inferred]`'));
+  assert.ok(concept.includes('`<question> → <ruling> — from "<the owner\'s words>" [inferred] [stack: <names>]`'));
+  assert.ok(read('skills/concept/references/concept-template.md').includes('carries [inferred] after its why and before any stack tag'));
+  const marked = '2. Will users pay money inside the product? → No — from "it is free for the household" [inferred] [stack: payments]';
+  assert.deepEqual([...parseRulings(`## Rulings\n\n1. Who is it for? → A household — from "for the two of us" [inferred]\n${marked}\n`)], [1, 2], 'a marked ruling still parses');
+  assert.match(marked, /\[inferred\] \[stack: .+\]$/, 'a marked stack ruling still ends with its tag');
 });
 
 test('each skill has name and description front matter, and the name matches its directory', () => {

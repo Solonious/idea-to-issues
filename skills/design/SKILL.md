@@ -33,7 +33,7 @@ Then, in this order:
 
 Derive every first-version screen from the concept's Rulings and the brainstorm's Key scenarios. Each screen has an id (`[a-z][a-z0-9-]*`), a purpose, `Basis: Ruling N`, its three states (empty, filled, error) and its transitions to other screens.
 
-Put the inventory to the owner one question at a time with the grilling skill (`/idea-to-issues:grilling`): which screens exist, which are missing, which to drop. Confirming a screen that a cited ruling already asks for is a detail question and carries a recommended answer; adding a screen no ruling asks for, or dropping or changing one that the owner's prototype or notes show, is a core question and is asked open. A screen with no ruling behind it is a question to the owner, never added silently. The agreed inventory goes into `## Inventory` of `docs/design/index.md`.
+Put the inventory to the owner one question at a time with the grilling skill (`/idea-to-issues:grilling`): which screens exist, which are missing, which to drop. A screen that a cited ruling already asks for is stated as an inference under the grilling rule, citing that ruling; when the ruling is marked `[inferred]`, confirming the screen is a detail question and carries a recommended answer. Adding a screen no ruling asks for, or dropping or changing one that the owner's prototype or notes show, is a core question and is asked open. A screen with no ruling behind it is a question to the owner, never added silently. The agreed inventory goes into `## Inventory` of `docs/design/index.md`.
 
 ## Step 4: The owner's prototype
 
