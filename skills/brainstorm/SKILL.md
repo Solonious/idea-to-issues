@@ -8,7 +8,7 @@ model: opus
 
 Talk to the owner in ${user_config.language}. `docs/brainstorm/notes.md` and `docs/brainstorm/summary.md` are always written in English.
 
-Every question to the owner follows the grilling skill (`/idea-to-issues:grilling`): one product question per turn, weighed as core or detail by its rule. A core question is asked open, with no recommended answer; only a detail question carries one. Facts are yours to find.
+Every question to the owner follows the grilling skill (`/idea-to-issues:grilling`): one product question per turn, weighed as core or detail by its rule. A core question is asked open, with no recommended answer; only a detail question carries one. An answer that already follows from the owner's own words is not asked: it is stated as an inference under the grilling rule. Facts are yours to find.
 
 ## The notes file
 
@@ -16,7 +16,7 @@ Every question to the owner follows the grilling skill (`/idea-to-issues:grillin
 
 Every entry has the heading `## <YYYY-MM-DD> — scenarios | attack | alternatives | competitors | free`, with one activity name and today's date in place of the placeholder. The set of activities that have run is the set of entry headings.
 
-Each session ends by appending, as the last line of its last entry, `Stopped at:` followed by `<what is still open> — next: <activity or step>`. Rulings inside entries use the format `<question> → <ruling> — <why>`.
+Each session ends by appending, as the last line of its last entry, `Stopped at:` followed by `<what is still open> — next: <activity or step>`. Rulings inside entries use the format `<question> → <ruling> — <why>`. A ruling kept from an inference (the grilling rule) ends with the mark `[inferred]`, and its why is what it follows from: `<question> → <ruling> — from "<the owner's words>" [inferred]`.
 
 ## Step 1: Read where we are
 

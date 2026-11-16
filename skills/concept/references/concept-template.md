@@ -20,7 +20,7 @@ Prototype: <link, optional. A visual reference, not a spec.>
 
 ## Rulings
 
-<!-- One entry per product decision the owner made, numbered in the order made: question → ruling — why. A ruling that answers a Stack categories question from references/stack-questions.md ends with [stack: <names>], the category names from its Decides cell without their backticks, in that order, so the stack stage can cite it. No other ruling carries a tag. -->
+<!-- One entry per product decision the owner made, numbered in the order made: question → ruling — why. A ruling that answers a Stack categories question from references/stack-questions.md ends with [stack: <names>], the category names from its Decides cell without their backticks, in that order, so the stack stage can cite it. No other ruling carries a stack tag. A ruling kept from an inference (the grilling rule) carries [inferred] after its why and before any stack tag: question → ruling — from "<the owner's words>" [inferred]. -->
 
 1. <question> → <ruling> — <why>
 2. <stack question, word for word from references/stack-questions.md> → <ruling> — <why> [stack: <key>, <key>]
